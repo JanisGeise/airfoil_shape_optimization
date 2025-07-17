@@ -1,0 +1,24 @@
+#!/bin/bash
+cd "${0%/*}" || exit                                # Run from this directory
+. "${WM_PROJECT_DIR:?}"/bin/tools/RunFunctions      # Tutorial run functions
+#------------------------------------------------------------------------------
+
+# check if already been meshed, e.g. when re-starting simulation from previous time step we need to avoid this step
+if [ ! -d "constant/polyMesh" ]; then
+    # execute meshing
+    ./Allrun.pre
+    cp -r 0.orig 0
+else
+  echo "Meshing already executed. To re-run the meshing step execute the Allclean script."
+fi
+
+# decompose and renumber
+runApplication decomposePar
+runParallel renumberMesh -overwrite
+
+# initialize
+runParallel potentialFoam -writephi
+
+# execute flow solver
+runParallel "$(getApplication)"
+

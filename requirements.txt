@@ -1,0 +1,12 @@
+pandas
+matplotlib
+scikit-learn
+jupyterlab
+numpy
+scipy
+torch
+ax-platform
+matplotlib
+pyyaml
+pyvista
+git+https://github.com/FlowModelingControl/flowtorch.git@aweiner

@@ -1,0 +1,147 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+| =========                 |                                                 |
+| \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox           |
+|  \\    /   O peration     | Version:  v2006                                 |
+|   \\  /    A nd           | Website:  www.openfoam.com                      |
+|    \\/     M anipulation  |                                                 |
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    version     2.0;
+    format      ascii;
+    class       dictionary;
+    object      controlDict;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+application     simpleFoam;
+
+startFrom       latestTime;
+
+startTime       0;
+
+stopAt          endTime;
+
+endTime         3500;
+
+deltaT          1;
+
+writeControl    adjustable;
+
+writeInterval   100;
+
+purgeWrite      1;
+
+writeFormat     binary;
+
+writePrecision   8;
+
+writeCompression off;
+
+timeFormat      general;
+
+timePrecision   6;
+
+runTimeModifiable true;
+
+Uinlet          20.0;    // free stream velocity
+alpha           0.0;        // angle of attack
+
+functions
+{
+    forces
+    {
+        type            forceCoeffs;
+        libs            (forces);
+        writeControl    timeStep;
+        writeInterval   1;
+        log             false;
+
+        patches
+        (
+            airfoil
+        );
+
+        // taken from: https://develop.openfoam.com/Development/openfoam/-/blob/OpenFOAM-v2412/tutorials/incompressible/pimpleFoam/LES/NACA4412/system/forceCoeffs
+
+        liftDir         (
+                            #eval{-sin(degToRad($alpha))} 
+                            0 
+                            #eval{cos(degToRad($alpha))}
+                        );
+        dragDir         (
+                            #eval{cos(degToRad($alpha))} 
+                            0 
+                            #eval{sin(degToRad($alpha))}
+                        );
+        pitchAxis   (0 1 0);
+        CofR        (0.25 0 0); // center of rotation at 25% chord
+        rhoInf      1;
+        rho         rhoInf;
+        magUInf     $Uinlet;
+        lRef        0.15;
+        Aref        0.004725;   // projected area of the airfoil
+    }
+
+    // TODO: purge write = 1
+    surface
+    {
+        type            surfaces;
+        libs            (sampling);
+        writeControl    writeTime;
+        startTime       0;
+
+        surfaceFormat   raw;
+        fields          (p);
+
+        surfaces
+        {
+            airfoil
+            {
+                type            patch;
+                patches         (airfoil);
+                interpolate     true;
+                invariant       true;
+                surfaceFormat   raw;
+            }
+        }
+    }
+
+    wallShearStress
+    {
+        type            wallShearStress;
+        libs            (fieldFunctionObjects);
+        patches         (airfoil);
+        log             true;
+        executeControl  writeTime;
+        executeInterval 1;
+        writeControl    writeTime;
+        writeInterval   1;
+    }
+
+    yPlus
+    {
+        type            yPlus;
+        libs            (fieldFunctionObjects);
+        log             true;
+        writeFields     false;
+        executeControl  timeStep;
+        executeInterval 1;
+        writeControl    timeStep;
+        writeInterval   1;
+    }
+   
+    solverInfo
+    {
+        type            solverInfo;
+        libs            ("libutilityFunctionObjects.so");
+        fields          (U p omega k);
+        writeResidualFields no;
+        executeControl  timeStep;
+        executeInterval 1;
+        writeControl    timeStep;
+        writeInterval   1;
+    }
+}
+
+// ************************************************************************* //
