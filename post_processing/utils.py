@@ -7,6 +7,25 @@ from glob import glob
 from os.path import join
 
 
+def load_residuals(load_path, patch_name: str = "airfoil") -> pd.DataFrame:
+    names = ["t", "U_solver", "Ux_initial", "Ux_final", "Ux_iters",	"Uz_initial", "Uz_final", "Uz_iters",
+             "U_converged", "k_solver", "k_initial", "k_final", "k_iters", "k_converged",
+              "omega_solver", "omega_initial", "omega_final", "omega_iters", "omega_converged",
+             "p_solver", "p_initial", "p_final", "p_iters", "p_converged"]
+    
+    dirs = sorted(glob(join(load_path, "postProcessing", "solverInfo", "0")), key=lambda x: float(x.split("/")[-1]))
+    _solverInfo = [pd.read_csv(join(p, "solverInfo.dat"), skiprows=2, sep=r"\s+", header=None, names=names) for p in dirs]
+
+    if len(_solverInfo) == 1:
+        _solverInfo = _solverInfo[0]
+    else:
+        _solverInfo = pd.concat(_solverInfo)
+        
+    _solverInfo.reset_index(inplace=True, drop=True)
+
+    return _solverInfo
+
+
 def load_yplus(load_path, patch_name: str = "airfoil") -> pd.DataFrame:
     dirs = sorted(glob(join(load_path, "postProcessing", "yPlus", "*")), key=lambda x: float(x.split("/")[-1]))
     _yplus = [pd.read_csv(join(p, "yPlus.dat"), sep=r"\s+", comment="#", header=None, usecols=list(range(5)),
@@ -27,7 +46,7 @@ def load_yplus(load_path, patch_name: str = "airfoil") -> pd.DataFrame:
     return _yplus
 
 
-def load_force_coeffs(load_path, usecols=[0, 1, 4], names=["t", "cx", "cy"]) -> pd.DataFrame:
+def load_force_coeffs(load_path, usecols=[0, 1, 4, 7], names=["t", "cx", "cy", "cm_pitch"]) -> pd.DataFrame:
     dirs = sorted(glob(join(load_path, "postProcessing", "forces", "*")), key=lambda x: float(x.split("/")[-1]))
     coeffs = [pd.read_csv(join(p, "coefficient.dat"), sep=r"\s+", comment="#", header=None, usecols=usecols, names=names)
               for p in dirs]
@@ -43,18 +62,15 @@ def load_force_coeffs(load_path, usecols=[0, 1, 4], names=["t", "cx", "cy"]) -> 
     return coeffs
 
 
-def compute_camber_line(x_coordinates, n_points: int = 1000, c: float = 0.15):
+def compute_camber_line(x_coordinates, xf_: float, f_max_: float, t_max: float, n_points: int = 1000, c: float = 0.15):
     # use parabolic spline to compute camber line
-    # x = pt.linspace(0, 1, steps=n_points)
-
-    # dummy values for max. camber and position of max. camber
-    xf_max, f_max = 0.5, 0.005
-
+    # f_max_ *= c
+    # xf_ *= c
     x_coordinates /= c
     # a = 1 / xf^2 * f_max
-    a = 1 / pow(xf_max, 2) * f_max
+    a = 1 / pow(xf_, 2) * f_max_
     # (1 - 2 * xf) / xf^2
-    b = (1 - 2 * xf_max) / pow(xf_max, 2)
+    b = (1 - 2 * xf_) / pow(xf_, 2)
     # y = a * (x * (1 - x) / (1 + b * x))
     _camber = a * (x_coordinates * (1 - x_coordinates) / (1 + b * x_coordinates))
     x_coordinates *= c

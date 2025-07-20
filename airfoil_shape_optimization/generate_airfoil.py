@@ -21,7 +21,7 @@ from os.path import join, exists
 
 
 class AirfoilGenerator:
-    def __init__(self, n_points: int = 250, cosine_distributed: bool = True, x_start: Union[int, float] = 0,
+    def __init__(self, n_points: int = 1000, cosine_distributed: bool = True, x_start: Union[int, float] = 0,
                  x_stop: Union[int, float] = 1, output: str = "stl") -> None:
         """
         class for generating the coordinates of the airfoil based on CST method
@@ -57,7 +57,7 @@ class AirfoilGenerator:
         self._reset_coordinates()
 
     def generate_airfoil(self, n1: Union[int, float], n2: Union[int, float],
-                         kr: Union[int, float], f_max: Union[int, float], xf_max: Union[int, float],
+                         kr: Union[int, float], f_max: Union[int, float], xf: Union[int, float],
                          t_max: Union[int, float], airfoil_name: str = "airfoil", write_path: str = ".",
                          write_file: bool = True) -> None or Tuple[pt.Tensor, pt.Tensor]:
         """
@@ -67,7 +67,7 @@ class AirfoilGenerator:
         :param n2:              second shape parameter of CST method, controls the trailing edge (TE)
         :param kr:              parameter defining the thickness distribution
         :param f_max:           max. camber, relative to the chord length
-        :param xf_max:          position of max. camber, relative to the chord length
+        :param xf:          position of max. camber, relative to the chord length
         :param t_max:           max. thickness of the airfoil, relative to the chord length
         :param airfoil_name:    name of the airfoil
         :param write_path:      path to which directory the dat file should be written to
@@ -82,7 +82,7 @@ class AirfoilGenerator:
         self._n2 = n2
         self._kr = kr
         self._f_max = f_max
-        self._xf_max = xf_max
+        self._xf_max = xf
         self._t_max = t_max
 
         # compute thickness distribution
