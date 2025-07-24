@@ -46,7 +46,9 @@ def load_yplus(load_path, patch_name: str = "airfoil") -> pd.DataFrame:
     return _yplus
 
 
-def load_force_coeffs(load_path, usecols=[0, 1, 4, 7], names=["t", "cx", "cy", "cm_pitch"]) -> pd.DataFrame:
+def load_force_coeffs(load_path) -> pd.DataFrame:
+    names = ["t", "cx", "cy", "cm_pitch"]
+    usecols = [0, 1, 4, 7]
     dirs = sorted(glob(join(load_path, "postProcessing", "forces", "*")), key=lambda x: float(x.split("/")[-1]))
     coeffs = [pd.read_csv(join(p, "coefficient.dat"), sep=r"\s+", comment="#", header=None, usecols=usecols, names=names)
               for p in dirs]
@@ -75,6 +77,18 @@ def compute_camber_line(x_coordinates, xf_: float, f_max_: float, t_max: float, 
     _camber = a * (x_coordinates * (1 - x_coordinates) / (1 + b * x_coordinates))
     x_coordinates *= c
     return x_coordinates, _camber
+
+
+def get_loss_from_log_file(load_dir: str) -> list:
+    # assuming single log file per case
+    with open(glob(join(load_dir, "*.log"))[0]) as f:
+        lines = f.readlines()
+
+    # the line we are interested in looks something like this:
+    # [INFO 07-20 17:58:07] ax.service.ax_client: Completed trial 48 with data: {'loss': (0.140475, None)}.
+    # omit the las entry, because this shows the final parameters
+    lines = [line.split("{'loss':")[-1].split(", ")[0].strip(" (") for line in lines if "{'loss':" in line][:-1]
+    return list(map(float, lines))
 
 
 if __name__ == "__main__":

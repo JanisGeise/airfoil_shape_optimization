@@ -15,6 +15,7 @@ from ax.service.utils.instantiation import ObjectiveProperties
 from torch import device
 
 from airfoil_shape_optimization.generate_airfoil import AirfoilGenerator
+from airfoil_shape_optimization.modify_simulation_setup import ModifySimulationSetup
 from airfoil_shape_optimization.utils import create_run_directories, load_force_coefficients
 
 
@@ -46,6 +47,12 @@ def run_optimization(settings: dict) -> None:
     dirs = [join(settings["train_path"], f"trial_{d}") for d in range(settings["N_simulations"])]
     create_run_directories(settings["base_simulation"], dirs)
 
+    # set IC conditions of the simulation
+    # TODO: at the moment we only have a single path, later we have to pass the list of directories to the class
+    simulation = ModifySimulationSetup(dirs[0], settings["Tu"], settings["Re"], settings["chord"], settings["U_inf"],
+                                       settings["Ma"], settings["compute_IC"], settings["T_inf"], settings["rho_inf"])
+    simulation.set_inflow_conditions()
+
     # instantiate airfoil generator class
     airfoil_generator = AirfoilGenerator(x_stop=settings["chord"])
 
@@ -70,20 +77,19 @@ def run_optimization(settings: dict) -> None:
                                                airfoils["xf"], airfoils["t_max"], airfoil_name=f"airfoil",
                                                write_path=join(dirs[d], "constant", "triSurface"))
 
-            # compute best airfoil TODO: put in own script
-            # airfoil_generator.generate_airfoil(0.6, 0.8913322883744601, 0.44688170519692605, 0.05,
-            #                                    0.75, 0.05, airfoil_name=f"airfoil",
-            #                                    write_path=join(dirs[d], "constant", "triSurface"))
-
             # add the path to OpenFOAN bashrc if executed from IDE
             set_openfoam_bashrc(dirs[d])
+
+        # set AoA
+        # TODO: loop over design range instead of design point
+        simulation.alpha = settings["alpha_target"]
 
         # TODO: implement OOP once it works
         # execute simulation
         with Pool(min(settings["N_runner"], len(dirs))) as pool:
             pool.starmap(execute_openfoam, [(d, "Allrun") for d in dirs])
 
-        # fetch data, if the simulation crashes append 10
+        # fetch data, if the simulation crashes append 10, extend to design range
         coefficients = []
         for simulation in dirs:
             try:
@@ -120,18 +126,17 @@ if __name__ == "__main__":
         "f_max": [0.005, 0.05],  # max. camber
         "t_max": [0.05, 0.15],  # max. thickness
         "xf": [0.35, 0.75],  # position of max. camber
-        "KR": [0.2, 0.8],  # shape parameter for thickness distribution
+        "KR": [0.2, 0.8],  # shape parameter for thickness distributionK
         "N1": [0.4, 0.6],  # shape parameter for leading edge
         "N2": [0.8, 1.1],  # shape parameter for trailing edge
 
         # IC TODO: adjust in simulation setup based on these values
         "Ma": 0.1,  # Mach number
         "Re": 3e5,  # Reynolds number
-        "compute_BC": "U",  # weather to compute initial conditions based on U or Ma
+        "compute_IC": "U",  # weather to compute initial conditions based on U or Ma
         "U_inf": 20,  # free stream velocity
         "Tu": 0.01,  # turbulence level
         "rho_inf": 1,  # free stream density
-        "p_inf": 1,  # free stream pressure
         "T_inf": 273,  # free stream temperature
         "chord": 0.15,  # chord length      TODO: parameterize meshing based on chord
 
@@ -144,7 +149,7 @@ if __name__ == "__main__":
         "train_path": "execute_training",
 
         "alpha_target": 0,  # target angle of attack at design point
-        "alpha": [-2, 5],  # angle of attack range in which the airfoil should perform well
+        "alpha_range": [-2, 5],  # angle of attack range in which the airfoil should perform well
         "design_param": "alpha",  # optimize airfoil for AOA or C_L
         "cl_target": 0.6,  # target C_L at design point
         "cl": None,  # C_L range in which the airfoil should perform well

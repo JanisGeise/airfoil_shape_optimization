@@ -17,11 +17,15 @@ FoamFile
 dimensions      [0 1 -1 0 0 0 0];
 
 // taken from https://develop.openfoam.com/Development/openfoam/-/blob/OpenFOAM-v2412/tutorials/incompressible/pimpleFoam/LES/NACA4412/0.orig/U
-Uinlet          20.0;    // free stream velocity
-AoA             0.0;        // angle of attack
 
-Ux              #eval{$Uinlet * cos(degToRad($AoA)) };
-Uz              #eval{$Uinlet * sin(degToRad($AoA)) };
+// free stream velocity
+Uinlet          20.0;
+
+// angle of attack
+alpha           0.0;
+
+Ux              #eval{$Uinlet * cos(degToRad($alpha)) };
+Uz              #eval{$Uinlet * sin(degToRad($alpha)) };
 
 Uinfinity         ($Ux  0.0 $Uz);
 

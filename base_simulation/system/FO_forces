@@ -1,0 +1,51 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+| =========                 |                                                 |
+| \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox           |
+|  \\    /   O peration     | Version:  v2206                                 |
+|   \\  /    A nd           | Website:  www.openfoam.com                      |
+|    \\/     M anipulation  |                                                 |
+\*---------------------------------------------------------------------------*/
+
+// ************************************************************************* //
+
+// free stream velocity
+Uinlet          20.0;
+
+// angle of attack
+alpha           0.0;
+
+forces
+{
+    type            forceCoeffs;
+    libs            (forces);
+    writeControl    timeStep;
+    writeInterval   1;
+    log             false;
+
+    patches
+    (
+        airfoil
+    );
+
+    // taken from: https://develop.openfoam.com/Development/openfoam/-/blob/OpenFOAM-v2412/tutorials/incompressible/pimpleFoam/LES/NACA4412/system/forceCoeffs
+    liftDir         (
+                        #eval{-sin(degToRad($alpha))} 
+                        0 
+                        #eval{cos(degToRad($alpha))}
+                    );
+    dragDir         (
+                        #eval{cos(degToRad($alpha))} 
+                        0 
+                        #eval{sin(degToRad($alpha))}
+                    );
+    pitchAxis   (0 1 0);
+    CofR        (0.25 0 0); // center of rotation at 25% chord
+    rhoInf      1;
+    rho         rhoInf;
+    magUInf     $Uinlet;
+    lRef        0.15;
+    Aref        0.004725;   // projected area of the airfoil
+}
+
+
+// ************************************************************************* //
