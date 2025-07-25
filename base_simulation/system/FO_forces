@@ -8,14 +8,14 @@
 
 // ************************************************************************* //
 
-// free stream velocity
-Uinlet          20.0;
-
-// angle of attack
-alpha           0.0;
-
 forces
 {
+    // free stream velocity
+    Uinlet          20.000000;
+
+    // angle of attack
+    alpha           0.0;
+
     type            forceCoeffs;
     libs            (forces);
     writeControl    timeStep;

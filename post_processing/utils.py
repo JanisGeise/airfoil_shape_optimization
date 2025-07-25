@@ -8,9 +8,11 @@ from os.path import join
 
 
 def load_residuals(load_path, patch_name: str = "airfoil") -> pd.DataFrame:
-    names = ["t", "U_solver", "Ux_initial", "Ux_final", "Ux_iters",	"Uz_initial", "Uz_final", "Uz_iters",
-             "U_converged", "k_solver", "k_initial", "k_final", "k_iters", "k_converged",
-              "omega_solver", "omega_initial", "omega_final", "omega_iters", "omega_converged",
+    names = ["t", "ReThetat_solver", "ReThetat_initial", "ReThetat_final", "ReThetat_iters", "ReThetat_converged", 
+             "U_solver", "Ux_initial", "Ux_final", "Ux_iters",	"Uz_initial", "Uz_final", "Uz_iters", "U_converged", 
+             "gammaInt_solver", "gammaInt_initial", "gammaInt_final", "gammaInt_iters", "gammaInt_converged", 
+             "k_solver", "k_initial", "k_final", "k_iters", "k_converged", 
+             "omega_solver", "omega_initial", "omega_final", "omega_iters", "omega_converged",
              "p_solver", "p_initial", "p_final", "p_iters", "p_converged"]
     
     dirs = sorted(glob(join(load_path, "postProcessing", "solverInfo", "0")), key=lambda x: float(x.split("/")[-1]))

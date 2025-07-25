@@ -1,6 +1,7 @@
 """
     main script containing the setup for the training
 """
+import logging
 import torch as pt
 import pandas as pd
 import sys
@@ -17,6 +18,11 @@ from torch import device
 from airfoil_shape_optimization.generate_airfoil import AirfoilGenerator
 from airfoil_shape_optimization.modify_simulation_setup import ModifySimulationSetup
 from airfoil_shape_optimization.utils import create_run_directories, load_force_coefficients
+
+
+logger = logging.getLogger(__name__)
+logging.basicConfig(level=logging.INFO, format='[%(asctime)s] %(levelname)-8s %(message)s', datefmt='%Y-%m-%d %H:%M:%S',
+                    force=True)
 
 
 def set_openfoam_bashrc(case_path: str) -> None:
@@ -66,7 +72,7 @@ def run_optimization(settings: dict) -> None:
 
     # execute the training
     for t in range(settings["N_trials"]):
-        print(f"Starting trial {t}.")
+        logging.info(f"Starting trial {t}.")
 
         # sample next CST parameters, currently only sequentiell execution is supported
         airfoils, trial_index = ax.get_next_trial()
@@ -95,7 +101,7 @@ def run_optimization(settings: dict) -> None:
             try:
                 coefficients.append(load_force_coefficients(simulation))
             except FileNotFoundError:
-                print(f"Trial {t} is not converged.")
+                logging.warning(f"Trial {t} is not converged.")
                 coefficients.append([])
 
         # compute objective function: maximize cl, minimize cd and pitching moment, here just for testing purposes
@@ -115,8 +121,8 @@ def run_optimization(settings: dict) -> None:
             pool.starmap(execute_openfoam, [(d, "Allclean") for d in dirs])
 
         # write a log file or pt file containing the settings, coefficients, objective etc.
-    print(f"Finished optimization after {time() - t_start} s.")
-    print(ax.get_best_parameters())
+    logging.info(f"Finished optimization after {time() - t_start} s.")
+    logging.info(ax.get_best_parameters())
     pt.save(ax.get_best_parameters(), join(settings["train_path"], "results_final_parameters.pt"))
 
 
@@ -126,22 +132,22 @@ if __name__ == "__main__":
         "f_max": [0.005, 0.05],  # max. camber
         "t_max": [0.05, 0.15],  # max. thickness
         "xf": [0.35, 0.75],  # position of max. camber
-        "KR": [0.2, 0.8],  # shape parameter for thickness distributionK
+        "KR": [0.2, 0.8],  # shape parameter for thickness distribution
         "N1": [0.4, 0.6],  # shape parameter for leading edge
         "N2": [0.8, 1.1],  # shape parameter for trailing edge
 
-        # IC TODO: adjust in simulation setup based on these values
+        # initial conditions of the simulation
         "Ma": 0.1,  # Mach number
         "Re": 3e5,  # Reynolds number
         "compute_IC": "U",  # weather to compute initial conditions based on U or Ma
         "U_inf": 20,  # free stream velocity
-        "Tu": 0.01,  # turbulence level
+        "Tu": 0.01,  # turbulence level (not in percent!)   TODO: add check to assure TU is not in %
         "rho_inf": 1,  # free stream density
         "T_inf": 273,  # free stream temperature
-        "chord": 0.15,  # chord length      TODO: parameterize meshing based on chord
+        "chord": 0.15,  # chord length
 
         # settings for optimization
-        "N_trials": 50,
+        "N_trials": 1,
         # TODO: sequentiell execution only at the moment
         # "N_runner": 1,
         # "N_simulations": 1,
@@ -151,7 +157,7 @@ if __name__ == "__main__":
         "alpha_target": 0,  # target angle of attack at design point
         "alpha_range": [-2, 5],  # angle of attack range in which the airfoil should perform well
         "design_param": "alpha",  # optimize airfoil for AOA or C_L
-        "cl_target": 0.6,  # target C_L at design point
+        "cl_target": 0.4,  # target C_L at design point
         "cl": None,  # C_L range in which the airfoil should perform well
     }
     # add the path to OpenFOAM bashrc when executing from IDE

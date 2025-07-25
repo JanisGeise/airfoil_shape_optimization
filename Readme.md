@@ -7,27 +7,26 @@ The code will be updated once in a while. The idea is the following:
 - airfoils are parameterized using CST method
 - Bayesian optimization is used to find the best parameters for given flow conditions
 - the flow is solved with `simpleFoam`
+- chord length is kept constant at $c = 0.15$ within the simulation, however, the chord length defined in the setup is used
+to compute the Reynolds number accordingly
 - the airfoil is optimized for a single design point, later this will be extended to a design range (compare section TODO)
 - the obejctive is the minimization of $c_D$ and $c_M$ (pitching moment) while maximizing $c_L$ for a given AoA $\alpha$
 
 ## Next steps / ideas / still TODO
 
 1. improvement and generalization of BayesOpt routine, script for executing validation simulation of best parameters
-2. file manipulation to set the inflow and boundary conditions for the case (Ma, Re, $\rho$, Tu, ...) -> k, omega, ...
-3. IO via YAML config file
+2. IO via YAML config file
+3. improvement of convergence behavior
 4. check of user input 
-5. exception handling regarding the meshing for weird airfoil shapes and crashed simulations 
-6. parameterize meshing so that different chord length can be used 
-7. maybe use wall function in case the grid is messed up 
-8. maybe add rounding of LE and TE (in case bayesOpt isn't able to detect unsuitable AF shapes with sharp TE)
-9. avoid writing surface data for all time steps since steady state simulation -> how to set purgeWrite for surface sampling? 
-10. validation of the numerical setup using NACA0012 standard benchmark case (grid convergence, ...)
-11. comparison kOmegaSST with and without transition modeling (since low Re)
-12. extend design point to design range -> how to efficiently run $\alpha$ sweeps in OpenFOAM? -> initialize each new point with previous alpah 
-13. extend for compressible flows and higher Re
-14. refactoring (ongoing)
-15. add checkpoints, logging, post-processing of optimization results, ... 
-16. parallel execution, HPC support etc.
+5. maybe use wall function in case the grid is messed up 
+6. maybe add rounding of LE and TE (in case bayesOpt isn't able to detect unsuitable AF shapes with sharp TE)
+7. avoid writing surface data for all time steps since steady state simulation -> how to set purgeWrite for surface sampling? 
+8. validation of the numerical setup using NACA0012 standard benchmark case (grid convergence, ...)
+9. extend design point to design range -> how to efficiently run $\alpha$ sweeps in OpenFOAM? -> initialize each new point with previous alpah 
+10. extend for compressible flows and higher Re
+11. refactoring (ongoing)
+12. add checkpoints, logging, ... 
+13. parallel execution, HPC support etc.
 
 ...
 

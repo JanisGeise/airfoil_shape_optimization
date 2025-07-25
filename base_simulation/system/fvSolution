@@ -44,15 +44,13 @@ solvers
         relTol          0;
     }
 
-    /*
     "(ReThetat|gammaInt)"
-    {
-        solver          GAMG;
-        tolerance       1e-07;
-        relTol          0.01;
-        smoother        GaussSeidel;
+    {   
+    	solver          GAMG;
+    	smoother        DILU;
+    	tolerance       1e-7;
+    	relTol          0.01;
     }
-    */
 
     Phi
     {
@@ -85,6 +83,8 @@ SIMPLE
         U               1e-5;
         k               1e-5;
         omega           1e-5;
+        gammaInt        1e-5;
+        ReThetaT        1e-5;
     }
 
 }
@@ -101,6 +101,8 @@ relaxationFactors
         U               0.7;
         k               0.7;
         omega           0.7;
+        gammaInt        0.7;
+        ReThetaT        0.7;
     }
 
 }

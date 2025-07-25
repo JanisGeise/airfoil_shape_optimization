@@ -46,6 +46,8 @@ runTimeModifiable true;
 
 functions
 {
+    #include "FO_forces"
+
     // TODO: purge write = 1
     surface
     {
