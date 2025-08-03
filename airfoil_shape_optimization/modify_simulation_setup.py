@@ -8,13 +8,13 @@ from .compute_initial_conditions import ComputeInitialConditions
 
 
 class ModifySimulationSetup(ComputeInitialConditions):
-    def __init__(self, simulation_path: str, tu: Union[int, float], reynolds_number: Union[int, float],
+    def __init__(self, simulation_path: list, tu: Union[int, float], reynolds_number: Union[int, float],
                  c: Union[int, float], u_inf: Union[int, float] = None, ma_number: Union[int, float] = None,
                  compute_ic: str = "U", T_inf: Union[int, float] = 273, rho_inf: Union[int, float] = 1):
         """
         modify the initial conditions of the simulation according to the defined setup
 
-        :param simulation_path: path to the simulation directory
+        :param simulation_path: path to the simulation directories
         :param tu: turbulence level
         :param reynolds_number: Reynolds number based on the chord length
         :param c: chord length of the airfoil; used to compute mu based on the Reynolds number, rho and inflow velocity
@@ -59,8 +59,9 @@ class ModifySimulationSetup(ComputeInitialConditions):
 
         :return: None
         """
-        self._replace_line(join(self._path, self._zero, "k"), "kInlet", "kInlet          8.557;",
-                           "kInlet          {:.6f};".format(self._k))
+        for p in self._path:
+            self._replace_line(join(p, self._zero, "k"), "kInlet", "kInlet          8.557;",
+                               "kInlet          {:.6f};".format(self._k))
 
     def _set_omega(self) -> None:
         """
@@ -68,8 +69,9 @@ class ModifySimulationSetup(ComputeInitialConditions):
 
         :return: None
         """
-        self._replace_line(join(self._path, self._zero, "omega"), "omegaInlet", "omegaInlet      35.605;",
-                           "omegaInlet      {:.6f};".format(self._omega))
+        for p in self._path:
+            self._replace_line(join(p, self._zero, "omega"), "omegaInlet", "omegaInlet      35.605;",
+                               "omegaInlet      {:.6f};".format(self._omega))
 
     def _set_inflow_velocity(self) -> None:
         """
@@ -77,11 +79,12 @@ class ModifySimulationSetup(ComputeInitialConditions):
 
         :return: None
         """
-        self._replace_line(join(self._path, self._zero, "U"), "Uinlet", "Uinlet          20.0;",
-                           "Uinlet          {:.6f};".format(self._u_inf))
+        for p in self._path:
+            self._replace_line(join(p, self._zero, "U"), "Uinlet", "Uinlet          20.0;",
+                               "Uinlet          {:.6f};".format(self._u_inf))
 
-        self._replace_line(join(self._path, self._forces_FO, "FO_forces"), "    Uinlet", "Uinlet          20.0;",
-                           "    Uinlet          {:.6f};".format(self._u_inf))
+            self._replace_line(join(p, self._forces_FO, "FO_forces"), "    Uinlet", "Uinlet          20.0;",
+                               "    Uinlet          {:.6f};".format(self._u_inf))
 
     def _set_nu(self) -> None:
         """
@@ -89,8 +92,9 @@ class ModifySimulationSetup(ComputeInitialConditions):
 
         :return: None
         """
-        self._replace_line(join(self._path, self._constant, "transportProperties"), "nu", "nu              1e-05;",
-                           "nu              {:.8e};".format(self._nu))
+        for p in self._path:
+            self._replace_line(join(p, self._constant, "transportProperties"), "nu", "nu              1e-05;",
+                               "nu              {:.8e};".format(self._nu))
 
     def _set_free_stream_density(self) -> None:
         """
@@ -98,8 +102,9 @@ class ModifySimulationSetup(ComputeInitialConditions):
 
         :return: None
         """
-        self._replace_line(join(self._path, self._forces_FO, "FO_forces"), "    rhoInf", "   rhoInf      1;",
-                           "   rhoInf      {:.6f};".format(self._rho))
+        for p in self._path:
+            self._replace_line(join(p, self._forces_FO, "FO_forces"), "    rhoInf", "   rhoInf      1;",
+                               "   rhoInf      {:.6f};".format(self._rho))
 
     def _set_angle_of_attack(self) -> None:
         """
@@ -107,16 +112,17 @@ class ModifySimulationSetup(ComputeInitialConditions):
 
         :return: None
         """
-        self._replace_line(join(self._path, self._zero, "U"),
-                           "alpha", "alpha           {:.6f};".format(self._alpha_old),
-                           "alpha          {:.6f};".format(self._alpha))
+        for p in self._path:
+            self._replace_line(join(p, self._zero, "U"),
+                               "alpha", "alpha           {:.6f};".format(self._alpha_old),
+                               "alpha          {:.6f};".format(self._alpha))
 
-        self._replace_line(join(self._path, self._forces_FO, "FO_forces"),
-                           "alpha", "    alpha           {:.6f};".format(self._alpha_old),
-                           "    alpha          {:.6f};".format(self._alpha))
+            self._replace_line(join(p, self._forces_FO, "FO_forces"),
+                               "alpha", "    alpha           {:.6f};".format(self._alpha_old),
+                               "    alpha          {:.6f};".format(self._alpha))
 
-        self._replace_line(join(self._path, self._allrun),
-                           "alpha", "alpha={:.6f}".format(self._alpha_old), "alpha={:.6f}".format(self._alpha))
+            self._replace_line(join(p, self._allrun),
+                               "alpha", "alpha={:.6f}".format(self._alpha_old), "alpha={:.6f}".format(self._alpha))
 
     def _set_tu(self) -> None:
         """
@@ -124,8 +130,9 @@ class ModifySimulationSetup(ComputeInitialConditions):
 
         :return: None
         """
-        self._replace_line(join(self._path, self._zero, "gammaInt"), "internalField", "internalField   uniform 0.01;",
-                           "internalField   uniform {:.6f};".format(self._tu))
+        for p in self._path:
+            self._replace_line(join(p, self._zero, "gammaInt"), "internalField", "internalField   uniform 0.01;",
+                               "internalField   uniform {:.6f};".format(self._tu))
 
     def _set_Re_theta(self) -> None:
         """
@@ -133,8 +140,9 @@ class ModifySimulationSetup(ComputeInitialConditions):
 
         :return: None
         """
-        self._replace_line(join(self._path, self._zero, "ReThetat"), "internalField", "internalField   uniform 1000;",
-                           "internalField   uniform {:.6f};".format(self._re_theta))
+        for p in self._path:
+            self._replace_line(join(p, self._zero, "ReThetat"), "internalField", "internalField   uniform 1000;",
+                               "internalField   uniform {:.6f};".format(self._re_theta))
 
     @staticmethod
     def _replace_line(pwd: str, key: str, old: str, new: str) -> None:

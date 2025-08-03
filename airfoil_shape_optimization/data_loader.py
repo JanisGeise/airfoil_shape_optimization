@@ -34,11 +34,15 @@ class DataLoader:
         self._compute_objective()
         self._write_polar_file()
 
-        return self._objective
+        # reset
+        _obj = self._objective
+        self._objective = 0
+
+        return _obj
 
     def _compute_objective(self, value_not_converged: int = 10, c1: float = 0.45, c2: float = 0.25,
                            c3: float = 0.2) -> None:
-        # loop over alpha and compute objective for each AoA, then compute A WEIGHTED, global objective from that
+        # loop over alpha and compute objective for each AoA, then compute a weighted, global objective from that
         _obj, _weight = [], []
         for a in self._alpha:
             if isinstance(self._coefficients[a], Series):
@@ -76,7 +80,6 @@ class DataLoader:
                                f"{self._precision.format(self._coefficients[a]["cm_pitch"])}\n")
 
         self._coefficients = {}
-        self._objective = 0
         self._alpha = []
 
 

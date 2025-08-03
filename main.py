@@ -37,13 +37,17 @@ def run_optimization(settings: dict) -> None:
     dataloader = DataLoader(settings["train_path"], settings["cl_target"], settings["alpha_target"],
                             settings["alpha_range"])
 
-    # create copies of the base case
+    # create copies of the base case and initialize the global log file
     dirs = [join(settings["train_path"], f"trial_{d}") for d in range(settings["N_simulations"])]
     create_run_directories(settings["base_simulation"], dirs)
 
+    _fmt = "{:." + str(6) + "f}"
+    with open(join(settings["train_path"], "log.optimization"), "w") as log_file:
+        log_file.write("trial\t\tf_max\t\tt_max\t\txf\t\t\tKR\t\t\tN1\t\t\tN2\t\t\tobjective\n")
+        log_file.write("-----\t\t-----\t\t-----\t\t----\t\t----\t\t----\t\t----\t\t---------\n")
+
     # set IC conditions of the simulation
-    # TODO: at the moment we only have a single path, later we have to pass the list of directories to the class
-    simulation = ModifySimulationSetup(dirs[0], settings["Tu"], settings["Re"], settings["chord"], settings["U_inf"],
+    simulation = ModifySimulationSetup(dirs, settings["Tu"], settings["Re"], settings["chord"], settings["U_inf"],
                                        settings["Ma"], settings["compute_IC"], settings["T_inf"], settings["rho_inf"])
     simulation.set_inflow_conditions()
 
@@ -76,8 +80,7 @@ def run_optimization(settings: dict) -> None:
 
         # set AoA
         # TODO: loop over design range instead of design point
-        # simulation.alpha = settings["alpha_target"]
-        simulation.alpha = 1337
+        simulation.alpha = settings["alpha_target"]
 
         # execute simulation
         executer.run_simulation()
@@ -93,8 +96,14 @@ def run_optimization(settings: dict) -> None:
         # clean the cases
         executer.clean_simulation()
 
-        # write a log file or pt file containing the settings, coefficients, objective etc.
-    logging.info(f"Finished optimization after {time() - t_start} s.")
+        # update the log file with the CST parameters and objective TODO: format precision
+        with open(join(settings["train_path"], "log.optimization"), "a") as log_file:
+            log_file.write(f"{_fmt.format(airfoils['f_max'])}\t\t{_fmt.format(airfoils['t_max'])}\t\t"
+                           f"{_fmt.format(airfoils['xf'])}\t\t{_fmt.format(airfoils['KR'])}\t\t"
+                           f"{_fmt.format(airfoils['N1'])}\t\t{_fmt.format(airfoils['N2'])}\t\t"
+                           f"{_fmt.format(objective[0])}\n")
+
+    logging.info(f"Finished optimization after {_fmt.format(time() - t_start)} s.")
     logging.info(ax.get_best_parameters())
     pt.save(ax.get_best_parameters(), join(settings["train_path"], "results_final_parameters.pt"))
 
