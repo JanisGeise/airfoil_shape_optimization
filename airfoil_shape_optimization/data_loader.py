@@ -13,10 +13,13 @@ logger = logging.getLogger(__name__)
 
 
 class DataLoader:
-    def __init__(self, simulation_path: str, cl_target: float, alpha_range: list, write_precision: int = 6):
+    def __init__(self, simulation_path: str, cl_target: float,  alpha_target: float, alpha_range: list,
+                 write_precision: int = 6):
         self._path = simulation_path
         self._cl_target = cl_target
-        self._cl_target = alpha_range
+        self._alpha_target = alpha_target
+        self._alpha_min = min(alpha_range)
+        self._alpha_max = max(alpha_range)
         self._coefficients = {}
         self._trial_no = 0
         self._objective = 0
@@ -35,13 +38,22 @@ class DataLoader:
 
     def _compute_objective(self, value_not_converged: int = 10, c1: float = 0.45, c2: float = 0.25,
                            c3: float = 0.2) -> None:
-        # TODO: replace once polar computation works, extend OF to design range
-        if isinstance(self._coefficients[self._alpha[0]], Series):
-            self._objective = (c1 * self._coefficients[self._alpha[0]]["cx"] + c2 *
-                               abs(self._cl_target - self._coefficients[self._alpha[0]]["cy"]) +
-                               c3 * abs(self._coefficients[self._alpha[0]]["cm_pitch"]))
-        else:
-            self._objective = value_not_converged
+        # loop over alpha and compute objective for each AoA, then compute A WEIGHTED, global objective from that
+        _obj, _weight = [], []
+        for a in self._alpha:
+            if isinstance(self._coefficients[a], Series):
+                if float(a) == self._alpha_target:
+                    _obj.append((c1 * self._coefficients[a]["cx"] + c2 *
+                                 abs(self._cl_target - self._coefficients[a]["cy"]) +
+                                 c3 * abs(self._coefficients[a]["cm_pitch"])))
+                else:
+                    _obj.append(c1 * self._coefficients[a]["cx"])
+            else:
+                _obj.append(value_not_converged)
+            _weight.append(1 - abs(self._alpha_target - float(a)) / (self._alpha_max - self._alpha_min))
+
+        # weigh with distance to alpha_target
+        self._objective = sum(w * o for w, o in zip(_weight, _obj))
 
     def _load_force_coefficients(self, run_directory: str) -> None:
         _directories = glob(join(run_directory, "postProcessing", "forces", "alpha_*"))
@@ -66,7 +78,6 @@ class DataLoader:
         self._coefficients = {}
         self._objective = 0
         self._alpha = []
-        exit()
 
 
 if __name__ == "__main__":

@@ -34,7 +34,8 @@ def run_optimization(settings: dict) -> None:
     t_start = time()
 
     # initialize dataloader
-    dataloader = DataLoader(settings["train_path"], settings["cl_target"], settings["alpha_range"])
+    dataloader = DataLoader(settings["train_path"], settings["cl_target"], settings["alpha_target"],
+                            settings["alpha_range"])
 
     # create copies of the base case
     dirs = [join(settings["train_path"], f"trial_{d}") for d in range(settings["N_simulations"])]
@@ -75,7 +76,8 @@ def run_optimization(settings: dict) -> None:
 
         # set AoA
         # TODO: loop over design range instead of design point
-        simulation.alpha = settings["alpha_target"]
+        # simulation.alpha = settings["alpha_target"]
+        simulation.alpha = 1337
 
         # execute simulation
         executer.run_simulation()
@@ -127,7 +129,7 @@ if __name__ == "__main__":
         "alpha_target": 0,  # target angle of attack at design point
         "alpha_range": [-2, 5],  # angle of attack range in which the airfoil should perform well
         "delta_alpha": 0.5,  # increment AoA by x deg
-        "cl_target": 0.4,  # target c_L at design point
+        "cl_target": 0.4,  # target c_L at alpha_target
     }
     # add the path to OpenFOAM bashrc when executing from IDE
     environ["WM_PROJECT_DIR"] = "/usr/lib/openfoam/openfoam2412"

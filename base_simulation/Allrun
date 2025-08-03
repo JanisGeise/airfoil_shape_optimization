@@ -3,7 +3,7 @@ cd "${0%/*}" || exit                                # Run from this directory
 . "${WM_PROJECT_DIR:?}"/bin/tools/RunFunctions      # Tutorial run functions
 #------------------------------------------------------------------------------
 # current angle of attack
-alpha=0
+alpha=0.000000
 
 # check if already been meshed, e.g. when re-starting simulation from previous time step we need to avoid this step
 if [ ! -d "constant/polyMesh" ]; then

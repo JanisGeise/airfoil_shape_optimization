@@ -36,6 +36,7 @@ class ModifySimulationSetup(ComputeInitialConditions):
         self._zero = "0.orig"
         self._constant = "constant"
         self._forces_FO = "system"
+        self._allrun = "Allrun"
 
     def set_inflow_conditions(self) -> None:
         """
@@ -113,6 +114,9 @@ class ModifySimulationSetup(ComputeInitialConditions):
         self._replace_line(join(self._path, self._forces_FO, "FO_forces"),
                            "alpha", "    alpha           {:.6f};".format(self._alpha_old),
                            "    alpha          {:.6f};".format(self._alpha))
+
+        self._replace_line(join(self._path, self._allrun),
+                           "alpha", "alpha={:.6f}".format(self._alpha_old), "alpha={:.6f}".format(self._alpha))
 
     def _set_tu(self) -> None:
         """
