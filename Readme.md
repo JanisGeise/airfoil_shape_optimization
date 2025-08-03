@@ -10,23 +10,24 @@ The code will be updated once in a while. The idea is the following:
 - chord length is kept constant at $c = 0.15$ within the simulation, however, the chord length defined in the setup is used
 to compute the Reynolds number accordingly
 - the airfoil is optimized for a single design point, later this will be extended to a design range (compare section TODO)
-- the obejctive is the minimization of $c_D$ and $c_M$ (pitching moment) while maximizing $c_L$ for a given AoA $\alpha$
+- the objective is the minimization of $c_D$ and $c_M$ (pitching moment) while maximizing $c_L$ for a given AoA $\alpha$
 
 ## Next steps / ideas / still TODO
 
-1. improvement and generalization of BayesOpt routine, script for executing validation simulation of best parameters
+1. improvement and generalization of BayesOpt routine
 2. IO via YAML config file
 3. improvement of convergence behavior
-4. check of user input 
-5. maybe use wall function in case the grid is messed up 
-6. maybe add rounding of LE and TE (in case bayesOpt isn't able to detect unsuitable AF shapes with sharp TE)
-7. avoid writing surface data for all time steps since steady state simulation -> how to set purgeWrite for surface sampling? 
-8. validation of the numerical setup using NACA0012 standard benchmark case (grid convergence, ...)
-9. extend design point to design range -> how to efficiently run $\alpha$ sweeps in OpenFOAM? -> initialize each new point with previous alpah 
-10. extend for compressible flows and higher Re
-11. refactoring (ongoing)
-12. add checkpoints, logging, ... 
-13. parallel execution, HPC support etc.
+4. replace meshing with [airfoil_meshing](https://github.com/AndreWeiner/airfoil_meshing) once that is implemented
+5. check of user input 
+6. maybe use wall function in case the grid is messed up 
+7. maybe add rounding of LE and TE (in case bayesOpt isn't able to detect unsuitable AF shapes with sharp TE)
+8. avoid writing surface data for all time steps since steady state simulation -> how to set purgeWrite for surface sampling? 
+9. validation of the numerical setup using NACA0012 standard benchmark case (grid convergence, ...)
+10. extend design point to design range -> how to efficiently run $\alpha$ sweeps in OpenFOAM? -> initialize each new point with previous alpha 
+11. extend for compressible flows and higher Re
+12. refactoring (ongoing)
+13. add checkpoints, logging, ... 
+14. parallel execution, HPC support etc.
 
 ...
 

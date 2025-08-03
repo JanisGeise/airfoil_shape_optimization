@@ -44,7 +44,7 @@ class ComputeInitialConditions:
         self._gamma = gamma
         self._c_mu = 0.09
 
-        # check either Ma or u_inf has to be given, add logging warning / info
+        # check either Ma or u_inf has to be given
         if u_inf is None or compute_IC.lower() == "ma":
             logging.info("Computing initial conditions based on the Mach number.")
         if ma_number is None or compute_IC.lower() == "u":
