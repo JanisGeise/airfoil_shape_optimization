@@ -30,6 +30,11 @@ def run_optimization(settings: dict) -> None:
         settings["N_simulations"] = 1
         settings["N_runner"] = 1
 
+    # make sure TU is not set in percent
+    if settings["Tu"] > 1:
+        logger.warning(f"Found a value for Tu of {settings['Tu']}. Tu is expected to be 0 <= Tu <= 1.")
+        exit()
+
     # start the timer
     t_start = time()
 
@@ -43,8 +48,8 @@ def run_optimization(settings: dict) -> None:
 
     _fmt = "{:." + str(6) + "f}"
     with open(join(settings["train_path"], "log.optimization"), "w") as log_file:
-        log_file.write("trial\t\tf_max\t\tt_max\t\txf\t\t\tKR\t\t\tN1\t\t\tN2\t\t\tobjective\n")
-        log_file.write("-----\t\t-----\t\t-----\t\t----\t\t----\t\t----\t\t----\t\t---------\n")
+        log_file.write("trial\tf_max\t\tt_max\t\txf\t\t\tKR\t\t\tN1\t\t\tN2\t\t\tobjective\n")
+        log_file.write("-----\t--------\t--------\t--------\t--------\t--------\t--------\t---------\n")
 
     # set IC conditions of the simulation
     simulation = ModifySimulationSetup(dirs, settings["Tu"], settings["Re"], settings["chord"], settings["U_inf"],
@@ -85,7 +90,7 @@ def run_optimization(settings: dict) -> None:
         # execute simulation
         executer.run_simulation()
 
-        # fetch data, if the simulation crashes append 10, extend to design range
+        # fetch data from the simulations
         objective = []
         for d in dirs:
             objective.append(dataloader.evaluate_trial(t, d))
@@ -96,11 +101,11 @@ def run_optimization(settings: dict) -> None:
         # clean the cases
         executer.clean_simulation()
 
-        # update the log file with the CST parameters and objective TODO: format precision
+        # update the log file with the CST parameters and objective
         with open(join(settings["train_path"], "log.optimization"), "a") as log_file:
-            log_file.write(f"{_fmt.format(airfoils['f_max'])}\t\t{_fmt.format(airfoils['t_max'])}\t\t"
-                           f"{_fmt.format(airfoils['xf'])}\t\t{_fmt.format(airfoils['KR'])}\t\t"
-                           f"{_fmt.format(airfoils['N1'])}\t\t{_fmt.format(airfoils['N2'])}\t\t"
+            log_file.write(f"{t}\t\t{_fmt.format(airfoils['f_max'])}\t{_fmt.format(airfoils['t_max'])}\t"
+                           f"{_fmt.format(airfoils['xf'])}\t{_fmt.format(airfoils['KR'])}\t"
+                           f"{_fmt.format(airfoils['N1'])}\t{_fmt.format(airfoils['N2'])}\t"
                            f"{_fmt.format(objective[0])}\n")
 
     logging.info(f"Finished optimization after {_fmt.format(time() - t_start)} s.")
@@ -123,7 +128,7 @@ if __name__ == "__main__":
         "Re": 3e5,  # Reynolds number
         "compute_IC": "U",  # weather to compute initial conditions based on U or Ma
         "U_inf": 20,  # free stream velocity
-        "Tu": 0.01,  # turbulence level (not in percent!)   TODO: add check to assure TU is not in %
+        "Tu": 0.01,  # turbulence level (not in percent!)
         "rho_inf": 1,  # free stream density
         "T_inf": 273,  # free stream temperature
         "chord": 0.15,  # chord length

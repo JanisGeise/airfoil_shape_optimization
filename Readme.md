@@ -17,15 +17,16 @@ to compute the Reynolds number accordingly
 1. improvement and generalization of BayesOpt routine
 2. IO via YAML config file
 3. improvement of convergence behavior
-4. replace meshing with [airfoil_meshing](https://github.com/AndreWeiner/airfoil_meshing) once that is implemented
-5. check of user input 
-6. maybe use wall function in case the grid is messed up 
-7. maybe add rounding of LE and TE (in case bayesOpt isn't able to detect unsuitable AF shapes with sharp TE)
-8. avoid writing surface data for all time steps since steady state simulation -> how to set purgeWrite for surface sampling? 
-9. validation of the numerical setup using NACA0012 standard benchmark case (grid convergence, ...)
-10. extend design point to design range -> how to efficiently run $\alpha$ sweeps in OpenFOAM? -> initialize each new point with previous alpha 
+4. test different objective functions
+5. extend design point to design range -> how to efficiently run $\alpha$ sweeps in OpenFOAM? 
+-> initialize each new point with previous alpha
+6. replace meshing with [airfoil_meshing](https://github.com/AndreWeiner/airfoil_meshing) once that is implemented
+7. maybe use wall function in case the grid is messed up 
+8. maybe add rounding of LE and TE (in case bayesOpt isn't able to detect unsuitable AF shapes with sharp TE)
+9. avoid writing surface data for all time steps since steady state simulation -> how to set purgeWrite for surface sampling? 
+10. validation of the numerical setup using NACA0012 standard benchmark case (grid convergence, ...)
 11. extend for compressible flows and higher Re
-12. refactoring (ongoing)
+12. refactoring main script (ongoing)
 13. add checkpoints, logging, ... 
 14. parallel execution, HPC support etc.
 

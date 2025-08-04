@@ -126,12 +126,12 @@ class AirfoilGenerator:
 
     def _reset_coordinates(self) -> None:
         """
-        TODO
+        reset the class to compute the next airfoil
 
         :return: None
         """
-        # compute a linear distributing
-        self._x = pt.linspace(self._x_start, self._x_stop, self._n_points)
+        # compute a normalized, linear distribution as initialization
+        self._x = pt.linspace(0, 1, self._n_points)
 
         # compute a cosine-distributed x-coordinates if specified
         if self._cos_distributed:
@@ -147,11 +147,11 @@ class AirfoilGenerator:
         """
         computes cosine distributed points based on given x-coordinates and their boundaries
         """
-        self._x = (self._x_stop - self._x_start) / 2 * (1 - pt.cos(pt.pi * self._x))
+        self._x = self._x_start + (self._x_stop - self._x_start) / 2 * (1 - pt.cos(pt.pi * self._x))
 
     def _compute_thickness_distribution(self) -> None:
         """
-        computes the coordinates of an airfoil using the CST method
+        computes the thickness distribution of an airfoil using the CST method
         """
         # class function: C(x) = x^N1 * (1 - x)^N2
         C = pow(self._x, self._n1) * pow((1 - self._x), self._n2)
@@ -212,6 +212,16 @@ class AirfoilGenerator:
 
 
 if __name__ == "__main__":
-    airfoil_generator = AirfoilGenerator(x_stop=0.15)
-    airfoil_generator.generate_airfoil(0.5, 1, 0.6, 0.01, 0.25, 0.08, airfoil_name="airfoil",
-                                       write_path=join("..", "base_simulation", "geometry"))
+    # perform visual check
+    import matplotlib.pyplot as plt
+    airfoil_generator = AirfoilGenerator(x_stop=0.3, x_start=0.15, n_points=100)
+
+    # create some cucumber looking airfoil to better check LE and TE
+    x, y = airfoil_generator.generate_airfoil(0.5, 0.5, 1, 0.025, 0.5, 0.08, airfoil_name="airfoil",
+                                              write_file=False)
+
+    fig, ax = plt.subplots(1, 1, figsize=(8, 2))
+    ax.plot(x, y, marker=".")
+    ax.set_aspect("equal")
+    plt.show()
+

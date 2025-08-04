@@ -15,6 +15,15 @@ logger = logging.getLogger(__name__)
 class DataLoader:
     def __init__(self, simulation_path: str, cl_target: float,  alpha_target: float, alpha_range: list,
                  write_precision: int = 6):
+        """
+        loads the force coefficients, computes the objective function and writes a polar file for a given simulation
+
+        :param simulation_path: base path to the directory in which the optimization is executed
+        :param cl_target: cl at the target angle of attack (design point)
+        :param alpha_target: target angle of attack (design point)
+        :param alpha_range: optimization range for angles of attack
+        :param write_precision: number of decimal points used when writing the polar file
+        """
         self._path = simulation_path
         self._cl_target = cl_target
         self._alpha_target = alpha_target
@@ -29,6 +38,13 @@ class DataLoader:
         self._precision = "{:." + str(write_precision) + "f}"
 
     def evaluate_trial(self, trial_no: int, run_directory: str) -> float:
+        """
+        evaluate the polar computation for a given airfoil configuration
+
+        :param trial_no: current trial index
+        :param run_directory: directory in which the simulation was executed
+        :return: objective function corresponding to the simulation
+        """
         self._trial_no = trial_no
         self._load_force_coefficients(run_directory)
         self._compute_objective()
@@ -42,6 +58,15 @@ class DataLoader:
 
     def _compute_objective(self, value_not_converged: int = 10, c1: float = 0.45, c2: float = 0.25,
                            c3: float = 0.2) -> None:
+        """
+        computes the objective function; goal is the reduction of cd and cm_pitch while reaching the cl_target
+
+        :param value_not_converged: value to assign for unconverged AoA
+        :param c1: weighting factor for cd
+        :param c2: weighting factor for reaching cl_target
+        :param c3: weighting factor for pitching moment
+        :return: None
+        """
         # loop over alpha and compute objective for each AoA, then compute a weighted, global objective from that
         _obj, _weight = [], []
         for a in self._alpha:
@@ -60,6 +85,12 @@ class DataLoader:
         self._objective = sum(w * o for w, o in zip(_weight, _obj))
 
     def _load_force_coefficients(self, run_directory: str) -> None:
+        """
+        loads all force coefficients of the polar
+
+        :param run_directory: directory in which the simulation was executed
+        :return: None
+        """
         _directories = glob(join(run_directory, "postProcessing", "forces", "alpha_*"))
         for d in sorted(_directories, key=lambda x: float(x.split("_")[-1])):
             alpha = str(d.split("_")[-1])
@@ -71,6 +102,11 @@ class DataLoader:
             self._alpha.append(alpha)
 
     def _write_polar_file(self) -> None:
+        """
+        writes the force coefficients for each angle of attack to a file
+
+        :return: None
+        """
         with open(join(self._path, f"polar_trial_{self._trial_no}.dat"), "w") as file_out:
             file_out.write(f"{self._header}\n")
             for a in self._alpha:
