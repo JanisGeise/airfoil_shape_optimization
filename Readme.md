@@ -9,17 +9,17 @@ The code will be updated once in a while. The idea is the following:
 - the flow is solved with `simpleFoam`
 - chord length is kept constant at $c = 0.15$ within the simulation, however, the chord length defined in the setup is used
 to compute the Reynolds number accordingly
-- the airfoil is optimized for a single design point, later this will be extended to a design range (compare section TODO)
+- the airfoil is optimized for a design range, which is specified within the setup dict
 - the objective is the minimization of $c_D$ and $c_M$ (pitching moment) while maximizing $c_L$ for a given AoA $\alpha$
 
 ## Next steps / ideas / still TODO
 
 1. improvement and generalization of BayesOpt routine
-2. IO via YAML config file
-3. improvement of convergence behavior
-4. test different objective functions
-5. extend design point to design range -> how to efficiently run $\alpha$ sweeps in OpenFOAM? 
--> initialize each new point with previous alpha
+2. check if initialization works -> initial residual in Time = 1 still 1 and simulation approx same time
+2. decrease mesh size to accelerate optimization
+3. IO via YAML config file
+4. improvement of convergence behavior
+5. test different objective functions
 6. replace meshing with [airfoil_meshing](https://github.com/AndreWeiner/airfoil_meshing) once that is implemented
 7. maybe use wall function in case the grid is messed up 
 8. maybe add rounding of LE and TE (in case bayesOpt isn't able to detect unsuitable AF shapes with sharp TE)

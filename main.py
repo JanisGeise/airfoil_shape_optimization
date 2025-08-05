@@ -62,7 +62,7 @@ def run_optimization(settings: dict) -> None:
     # instantiate airfoil generator class
     airfoil_generator = AirfoilGenerator(x_stop=settings["chord"])
 
-    # initialize Ax TODO: make parameter list from settings dict more efficiently, define type float etc.
+    # initialize Ax
     parameters = [{"name": f"{k}", "type": "range", "bounds": settings[k]} for k in
                   ["f_max", "t_max", "xf", "KR", "N1", "N2"]]
 
@@ -83,17 +83,37 @@ def run_optimization(settings: dict) -> None:
                                                airfoils["xf"], airfoils["t_max"], airfoil_name=f"airfoil",
                                                write_path=join(dirs[d], "constant", "triSurface"))
 
-        # set AoA
-        # TODO: loop over design range instead of design point
-        simulation.alpha = settings["alpha_target"]
+        # compute polar in the defined alpha range, since the AoA's are usually very low, we can use float16
+        all_alpha = pt.arange(settings["alpha_range"][0], settings["alpha_range"][1]+settings["delta_alpha"],
+                              settings["delta_alpha"], dtype=pt.float16)
 
-        # execute simulation
-        executer.run_simulation()
+        # make sure alpha_target is included within the polar
+        if settings["alpha_target"] not in all_alpha:
+            all_alpha = pt.cat([all_alpha, pt.tensor(settings["alpha_target"]).unsqueeze(-1)])
+
+        for idx, alpha in enumerate(all_alpha):
+            logger.info(f"Starting computation for alpha = {'{:.2f}'.format(alpha.item())} deg.")
+
+            # we need to set alpha before executing the first simulation, for all later simulations we need to set
+            # alpha before applying mapFields
+            if idx == 0:
+                simulation.alpha = alpha
+
+                # execute simulation
+                executer.run_simulation()
+                continue
+
+            # set new alpha in all dicts
+            simulation.alpha = alpha
+
+            # map the field from previous alpha as initialization to new alpha to improve convergence
+            executer.set_initial_fields()
+
+            # execute simulation
+            executer.run_simulation()
 
         # fetch data from the simulations
-        objective = []
-        for d in dirs:
-            objective.append(dataloader.evaluate_trial(t, d))
+        objective = [dataloader.evaluate_trial(t, d) for d in dirs]
 
         # evaluate the trial, we only have a single trial so take the first entry of the list
         ax.complete_trial(trial_index=trial_index, raw_data={"loss": objective[0]})
@@ -114,6 +134,8 @@ def run_optimization(settings: dict) -> None:
 
 
 if __name__ == "__main__":
+    # TODO: add polar plot (cl vs alpha & cl vs cd) vs. trial to notebook -> all black lines and opacity set by trail no
+    #
     setup = {
         # boundaries for CSM parameters
         "f_max": [0.005, 0.05],  # max. camber
@@ -134,14 +156,14 @@ if __name__ == "__main__":
         "chord": 0.15,  # chord length
 
         # settings for optimization
-        "N_trials": 1,
+        "N_trials": 20,
         "N_runner": 1,
         "N_simulations": 1,
         "base_simulation": "base_simulation",
         "train_path": "execute_training",
 
         "alpha_target": 0,  # target angle of attack at design point
-        "alpha_range": [-2, 5],  # angle of attack range in which the airfoil should perform well
+        "alpha_range": [-0.5, 3],  # angle of attack range in which the airfoil should perform well
         "delta_alpha": 0.5,  # increment AoA by x deg
         "cl_target": 0.4,  # target c_L at alpha_target
     }

@@ -1,0 +1,11 @@
+#!/bin/bash
+cd "${0%/*}" || exit                                # Run from this directory
+. "${WM_PROJECT_DIR:?}"/bin/tools/RunFunctions      # Tutorial run functions
+#------------------------------------------------------------------------------
+cp -r 0.orig 0
+latestTime=$(foamListTimes -case . | tail -1)
+
+# now modify the A0A within U
+runApplication mapFields -consistent -sourceTime 'latestTime' .
+
+rm -r "${latestTime}"

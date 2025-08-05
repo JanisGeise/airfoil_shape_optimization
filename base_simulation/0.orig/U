@@ -22,7 +22,7 @@ dimensions      [0 1 -1 0 0 0 0];
 Uinlet          20.0;
 
 // angle of attack
-alpha           0.0;
+alpha           0.000000;
 
 Ux              #eval{$Uinlet * cos(degToRad($alpha)) };
 Uz              #eval{$Uinlet * sin(degToRad($alpha)) };

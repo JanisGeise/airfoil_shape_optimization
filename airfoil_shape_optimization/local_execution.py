@@ -19,10 +19,11 @@ class LocalExecuter(Executer):
         self._run_script = "Allrun"
         self._pre_run_script = "Allrun.pre"
         self._clean_script = "Allclean"
+        self._mapFields = "mapFields"
 
         # add the path of OpenFOAM to bashrc
         for d in dirs:
-            self.set_openfoam_bashrc(d, self._pre_run_script, self._run_script, self._clean_script)
+            self.set_openfoam_bashrc(d, self._pre_run_script, self._run_script, self._clean_script, self._mapFields)
 
     def run_simulation(self) -> None:
         # execute simulation, don't use Pool() in case of seriell execution since this crashes the debugger...
@@ -44,6 +45,15 @@ class LocalExecuter(Executer):
 
     def _execute(self, directory: str, script: str) -> None:
         Popen([f"./{script}"], cwd=directory).wait(timeout=self._timeout)
+
+    def set_initial_fields(self):
+        # map the fields as initialization for new AoA
+        if self._n_runner == 1:
+            for d in self._dirs:
+                self._execute(d, self._mapFields)
+        else:
+            with Pool(min(self._n_runner, len(self._dirs))) as pool:
+                pool.starmap(self._execute, [(d, self._mapFields) for d in self._dirs])
 
 
 if __name__ == "__main__":

@@ -115,11 +115,11 @@ class ModifySimulationSetup(ComputeInitialConditions):
         for p in self._path:
             self._replace_line(join(p, self._zero, "U"),
                                "alpha", "alpha           {:.6f};".format(self._alpha_old),
-                               "alpha          {:.6f};".format(self._alpha))
+                               "alpha           {:.6f};".format(self._alpha))
 
             self._replace_line(join(p, self._forces_FO, "FO_forces"),
                                "alpha", "    alpha           {:.6f};".format(self._alpha_old),
-                               "    alpha          {:.6f};".format(self._alpha))
+                               "    alpha           {:.6f};".format(self._alpha))
 
             self._replace_line(join(p, self._allrun),
                                "alpha", "alpha={:.6f}".format(self._alpha_old), "alpha={:.6f}".format(self._alpha))
@@ -159,7 +159,7 @@ class ModifySimulationSetup(ComputeInitialConditions):
             lines = f.readlines()
 
         with open(pwd, "w") as f:
-            f.write("".join([line if not line.startswith(key) else line.replace(old, new) for line in lines]))
+            f.write("".join([line if not line.strip().startswith(key) else line.replace(old, new) for line in lines]))
 
     @property
     def alpha(self) -> float:
