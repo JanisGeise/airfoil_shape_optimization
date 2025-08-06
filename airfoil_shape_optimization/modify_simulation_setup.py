@@ -8,7 +8,7 @@ from .compute_initial_conditions import ComputeInitialConditions
 
 
 class ModifySimulationSetup(ComputeInitialConditions):
-    def __init__(self, simulation_path: list, tu: Union[int, float], reynolds_number: Union[int, float],
+    def __init__(self, simulation_path: Union[str, list], tu: Union[int, float], reynolds_number: Union[int, float],
                  c: Union[int, float], u_inf: Union[int, float] = None, ma_number: Union[int, float] = None,
                  compute_ic: str = "U", T_inf: Union[int, float] = 273, rho_inf: Union[int, float] = 1):
         """
@@ -28,7 +28,7 @@ class ModifySimulationSetup(ComputeInitialConditions):
         """
         super().__init__(tu, reynolds_number, c, T=T_inf, rho=rho_inf, u_inf=u_inf, ma_number=ma_number,
                          compute_IC=compute_ic)
-        self._path = simulation_path
+        self._path = simulation_path if isinstance(simulation_path, list) else [simulation_path]
         self._alpha = 0.0
         self._alpha_old = 0.0
 

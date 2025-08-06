@@ -5,6 +5,8 @@ import logging
 
 from glob import glob
 from os.path import join
+from typing import Union
+
 from pandas import Series
 
 from .utils import load_force_coefficients
@@ -14,7 +16,8 @@ logger = logging.getLogger(__name__)
 
 class DataLoader:
     def __init__(self, simulation_path: str, cl_target: float,  alpha_target: float, alpha_range: list,
-                 write_precision: int = 6):
+                 write_precision: int = 6, c1: float = 0.45, c2: float = 0.4, c3: float = 0.05,
+                 value_not_converged: Union[int, float] = 1):
         """
         loads the force coefficients, computes the objective function and writes a polar file for a given simulation
 
@@ -23,6 +26,11 @@ class DataLoader:
         :param alpha_target: target angle of attack (design point)
         :param alpha_range: optimization range for angles of attack
         :param write_precision: number of decimal points used when writing the polar file
+        :param value_not_converged: value to assign for unconverged AoA
+        :param c1: weighting factor for cd
+        :param c2: weighting factor for reaching cl_target
+        :param c3: weighting factor for pitching moment
+        :param value_not_converged: value for the objective function if the simulation crashes
         """
         self._path = simulation_path
         self._cl_target = cl_target
@@ -33,9 +41,20 @@ class DataLoader:
         self._trial_no = 0
         self._objective = 0
         self._alpha = []
-        self._header = "alpha\t\tcl  \t\tcd\t\t\tcm_pitch\n"
+        self._header = "alpha\t\tcd  \t\tcl\t\t\tcm_pitch\n"
         self._header += "\t".join(4 * ["".join((write_precision + 2) * ["-"])])
         self._precision = "{:." + str(write_precision) + "f}"
+
+        # coefficients for the objective function
+        self._c1 = c1
+        self._c2 = c2
+        self._c3 = c3
+        self._value_not_converged = value_not_converged
+
+        # log settings
+        logger.info(f"Coefficients objective function:\n\t\t\t\t\t\t\t\tc1:\t\t\t\t{self._c1}\n\t\t\t\t\t\t\t\t"
+                    f"c2:\t\t\t\t{self._c2}\n\t\t\t\t\t\t\t\tc3:\t\t\t\t{self._c3}\n"
+                    f"\t\t\t\t\t\t\t\tnot_converged:\t{self._value_not_converged}")
 
     def evaluate_trial(self, trial_no: int, run_directory: str) -> float:
         """
@@ -56,15 +75,10 @@ class DataLoader:
 
         return _obj
 
-    def _compute_objective(self, value_not_converged: int = 10, c1: float = 0.45, c2: float = 0.25,
-                           c3: float = 0.2) -> None:
+    def _compute_objective(self) -> None:
         """
         computes the objective function; goal is the reduction of cd and cm_pitch while reaching the cl_target
 
-        :param value_not_converged: value to assign for unconverged AoA
-        :param c1: weighting factor for cd
-        :param c2: weighting factor for reaching cl_target
-        :param c3: weighting factor for pitching moment
         :return: None
         """
         # loop over alpha and compute objective for each AoA, then compute a weighted, global objective from that
@@ -72,13 +86,13 @@ class DataLoader:
         for a in self._alpha:
             if isinstance(self._coefficients[a], Series):
                 if float(a) == self._alpha_target:
-                    _obj.append((c1 * self._coefficients[a]["cx"] + c2 *
+                    _obj.append((self._c1 * self._coefficients[a]["cx"] + self._c2 *
                                  abs(self._cl_target - self._coefficients[a]["cy"]) +
-                                 c3 * abs(self._coefficients[a]["cm_pitch"])))
+                                 self._c3 * abs(self._coefficients[a]["cm_pitch"])))
                 else:
-                    _obj.append(c1 * self._coefficients[a]["cx"])
+                    _obj.append(self._c1 * self._coefficients[a]["cx"])
             else:
-                _obj.append(value_not_converged)
+                _obj.append(self._value_not_converged)
             _weight.append(1 - abs(self._alpha_target - float(a)) / (self._alpha_max - self._alpha_min))
 
         # weigh with distance to alpha_target

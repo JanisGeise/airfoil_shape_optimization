@@ -18,7 +18,7 @@ to compute the Reynolds number accordingly
 2. check if initialization works -> initial residual in Time = 1 still 1 and simulation approx same time
 2. decrease mesh size to accelerate optimization
 3. IO via YAML config file
-4. improvement of convergence behavior
+4. improvement of convergence behavior -> use DMD for that -> refer to test project steady DMD
 5. test different objective functions
 6. replace meshing with [airfoil_meshing](https://github.com/AndreWeiner/airfoil_meshing) once that is implemented
 7. maybe use wall function in case the grid is messed up 

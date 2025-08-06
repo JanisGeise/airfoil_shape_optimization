@@ -9,9 +9,9 @@ from .execution import Executer
 
 
 class LocalExecuter(Executer):
-    def __init__(self, dirs: list, n_runner: int = 1, timeout: Union[int, float] = 1e4):
+    def __init__(self, dirs: Union[str, list], n_runner: int = 1, timeout: Union[int, float] = 1e4):
         super().__init__()
-        self._dirs = dirs
+        self._dirs = dirs if isinstance(dirs, list) else [dirs]
         self._timeout = timeout
         self._n_runner = n_runner
 
@@ -22,7 +22,7 @@ class LocalExecuter(Executer):
         self._mapFields = "mapFields"
 
         # add the path of OpenFOAM to bashrc
-        for d in dirs:
+        for d in self._dirs:
             self.set_openfoam_bashrc(d, self._pre_run_script, self._run_script, self._clean_script, self._mapFields)
 
     def run_simulation(self) -> None:

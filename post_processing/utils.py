@@ -48,10 +48,10 @@ def load_yplus(load_path, patch_name: str = "airfoil") -> pd.DataFrame:
     return _yplus
 
 
-def load_force_coeffs(load_path) -> pd.DataFrame:
+def load_force_coeffs(load_path, name: str = "alpha_0.00000") -> pd.DataFrame:
     names = ["t", "cx", "cy", "cm_pitch"]
     usecols = [0, 1, 4, 7]
-    dirs = sorted(glob(join(load_path, "postProcessing", "forces", "*")), key=lambda x: float(x.split("/")[-1]))
+    dirs = sorted(glob(join(load_path, "postProcessing", "forces", name)), key=lambda x: float(x.split("_")[-1]))
     coeffs = [pd.read_csv(join(p, "coefficient.dat"), sep=r"\s+", comment="#", header=None, usecols=usecols, names=names)
               for p in dirs]
 

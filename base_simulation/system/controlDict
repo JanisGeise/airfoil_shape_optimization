@@ -100,7 +100,7 @@ functions
     {
         type            solverInfo;
         libs            ("libutilityFunctionObjects.so");
-        fields          (U p omega k);
+        fields          (U p omega k ReThetat gammaInt);
         writeResidualFields no;
         executeControl  timeStep;
         executeInterval 1;

@@ -1,25 +1,37 @@
 """
     execute the simulation for the final airfoil found in the optimization
 """
-
 import sys
 import torch as pt
 
 from os import environ
 from os.path import join
-from subprocess import Popen
 
+from airfoil_shape_optimization.data_loader import DataLoader
 from airfoil_shape_optimization.generate_airfoil import AirfoilGenerator
+from airfoil_shape_optimization.local_execution import LocalExecuter
+from airfoil_shape_optimization.modify_simulation_setup import ModifySimulationSetup
 from airfoil_shape_optimization.utils import create_run_directories
-from main import set_openfoam_bashrc
+
 
 if __name__ == "__main__":
     # paths to the training directory
+    # TODO: rename solverInfo, surface and y+ directories during polar run as well. otherwise they get overwritten
+    #       increase endTime in control dict to 3500
     train_path = join("..", "execute_training")
     validation_path = join(train_path, "validation_run")
 
+    # add the path to OpenFOAM bashrc when executing from IDE
+    environ["WM_PROJECT_DIR"] = "/usr/lib/openfoam/openfoam2412"
+    sys.path.insert(0, environ["WM_PROJECT_DIR"])
+
     # chord length
     chord = 0.15
+
+    # parameters for polar computation
+    alpha_range = [-2, 4]
+    delta_alpha = 0.5
+    alpha_target = 0
 
     # create the simulation setup
     create_run_directories(join("..", "base_simulation"), validation_path)
@@ -32,13 +44,39 @@ if __name__ == "__main__":
                                        airfoil_name=f"airfoil",
                                        write_path=join(validation_path, "constant", "triSurface"))
 
-    # add the path to OpenFOAM bashrc when executing from IDE
-    environ["WM_PROJECT_DIR"] = "/usr/lib/openfoam/openfoam2412"
-    sys.path.insert(0, environ["WM_PROJECT_DIR"])
+    # set IC conditions of the simulation
+    simulation = ModifySimulationSetup(validation_path, 0.01, 3e5, chord, 20,
+                                       0.1, "U", 273, 1)
+    simulation.set_inflow_conditions()
 
-    # add the path to OpenFOAN bashrc if executed from IDE
-    set_openfoam_bashrc(validation_path)
+    # initialize the executer
+    executer = LocalExecuter(validation_path, 1)
 
-    # execute simulation
-    Popen([f"./Allrun"], cwd=validation_path).wait(timeout=1e4)
+    # initialize dataloader
+    dataloader = DataLoader(validation_path, 0.4, alpha_target, alpha_range)
+
+    for idx, alpha in enumerate(pt.arange(alpha_range[0], alpha_range[1] + delta_alpha, delta_alpha)):
+        print(f"Starting computation for alpha = {'{:.2f}'.format(alpha.item())} deg.")
+
+        # we need to set alpha before executing the first simulation, for all later simulations we need to set
+        # alpha before applying mapFields
+        if idx == 0:
+            simulation.alpha = alpha
+
+            # execute simulation
+            executer.run_simulation()
+            continue
+
+        # set new alpha in all dicts
+        simulation.alpha = alpha
+
+        # map the field from previous alpha as initialization to new alpha to improve convergence
+        executer.set_initial_fields()
+
+        # execute simulation
+        executer.run_simulation()
+
+    # write coefficients to a polar file
+    _ = dataloader.evaluate_trial(0, validation_path)
+
     print("Finished validation run.")

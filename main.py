@@ -128,14 +128,13 @@ def run_optimization(settings: dict) -> None:
                            f"{_fmt.format(airfoils['N1'])}\t{_fmt.format(airfoils['N2'])}\t"
                            f"{_fmt.format(objective[0])}\n")
 
-    logging.info(f"Finished optimization after {_fmt.format(time() - t_start)} s.")
+    logging.info(f"\nFinished optimization after {_fmt.format(time() - t_start)} s.\n")
     logging.info(ax.get_best_parameters())
     pt.save(ax.get_best_parameters(), join(settings["train_path"], "results_final_parameters.pt"))
+    pt.save(settings, join(settings["train_path"], "settings_optimization.pt"))
 
 
 if __name__ == "__main__":
-    # TODO: add polar plot (cl vs alpha & cl vs cd) vs. trial to notebook -> all black lines and opacity set by trail no
-    #
     setup = {
         # boundaries for CSM parameters
         "f_max": [0.005, 0.05],  # max. camber
