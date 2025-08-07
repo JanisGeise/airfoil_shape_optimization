@@ -14,7 +14,7 @@ logging.basicConfig(level=logging.INFO, format='[%(asctime)s] %(levelname)-8s %(
 class ComputeInitialConditions:
     def __init__(self, tu: Union[int, float], reynolds_number: Union[int, float],
                  c: Union[int, float], gamma: Union[int, float] = 1.4, R: Union[int, float] = 287.053,
-                 T: Union[int, float] = 273, ma_number: Union[int, float] = None,
+                 T: Union[int, float] = 273, ma_number: Union[int, float] = None, p: Union[int, float] = 101325,
                  u_inf: Union[int, float] = None, rho: Union[int, float] = 1, compute_IC: str = "U"):
         """
         compute the initial conditions of the simulation according to the defined setup
@@ -31,13 +31,15 @@ class ComputeInitialConditions:
         :param T: free-stream temperature, used for calculation of the Mach number or inflow velocity (depending on
                       what is given)
         :param ma_number: free-stream Mach number, if 'None' then u_inf has to be given
-        :param u_inf: free-stream velocity, if 'None' then ma_number has to be given
+        :param p: free-stream pressure, currently not used
+        :param u_inf: free-stream velocity, if 'None' then ma_number has to be given, otherwise ma_number is ignored
         :param rho: free-stream density, used for cl and cd calculation
         :param compute_IC: parameter which should be used for computing the initial conditions; either 'U' or 'Ma'
                            denoting the free-stream velocity and Mach number, respectively
         """
         self._rho = rho
         self._T = T
+        self._p = p
         self._R = R
         self._tu = tu
         self._c = c
@@ -58,6 +60,13 @@ class ComputeInitialConditions:
             self._compute_ma_number()
         elif u_inf is None:
             self._compute_inflow_velocity()
+
+        # if Ma is given and we compute the IC based on U we need to adjust the temperature and then rho to get
+        # the correct mu, then we also have to set the correct rho for forces computation
+        # TODO: doesn't seem to be correct, for now just ignore the Mach number if given
+        # if ma_number is not None and ma_number != 0 and compute_IC.lower() == "u":
+        #     self._T = pow(self._u_inf / self._ma_number, 2) / (self._gamma * self._R)
+        #     self._rho = self._p / (self._R * self._T)
 
         self._compute_k()
         self._compute_omega()
