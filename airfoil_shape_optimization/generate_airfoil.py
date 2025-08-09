@@ -156,9 +156,13 @@ class AirfoilGenerator:
         # class function: C(x) = x^N1 * (1 - x)^N2
         C = pow(self._x, self._n1) * pow((1 - self._x), self._n2)
 
-        # shape function: S(x) = (x / KR) + KR * (1-x)
+        # shape function: S(x) = (x / KR) + KR * (1-x) -> first term: aft end shape, second term: nose shape
         S = self._x / self._kr + self._kr * (1 - self._x)
-        self._thickness_distribution = C * S
+
+        # TODO: add delta TE, use same delta TE for upper and lower surface, respectively, add as optimization parameter
+        delta_TE = 0
+
+        self._thickness_distribution = C * S + self._x * delta_TE
 
     def _compute_camber_line(self) -> None:
         """

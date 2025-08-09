@@ -7,36 +7,26 @@ from glob import glob
 from os.path import join
 
 
-def load_residuals(load_path, patch_name: str = "airfoil") -> pd.DataFrame:
-    names = ["t", "ReThetat_solver", "ReThetat_initial", "ReThetat_final", "ReThetat_iters", "ReThetat_converged", 
-             "U_solver", "Ux_initial", "Ux_final", "Ux_iters",	"Uz_initial", "Uz_final", "Uz_iters", "U_converged", 
-             "gammaInt_solver", "gammaInt_initial", "gammaInt_final", "gammaInt_iters", "gammaInt_converged", 
-             "k_solver", "k_initial", "k_final", "k_iters", "k_converged", 
-             "omega_solver", "omega_initial", "omega_final", "omega_iters", "omega_converged",
-             "p_solver", "p_initial", "p_final", "p_iters", "p_converged"]
-    
-    dirs = sorted(glob(join(load_path, "postProcessing", "solverInfo", "0")), key=lambda x: float(x.split("/")[-1]))
-    _solverInfo = [pd.read_csv(join(p, "solverInfo.dat"), skiprows=2, sep=r"\s+", header=None, names=names) for p in dirs]
+def load_residuals(load_path, name: str = "alpha_0.00000") -> pd.DataFrame:
+    # we have to read in the header separately since there is a # which causes misalignment of the columns
+    with open(join(load_path, "postProcessing", "solverInfo", name, "solverInfo.dat"), "r") as f:
+        lines = f.readlines()
+        header_line = lines[1].lstrip("#").strip()  # Remove leading "#" and strip spaces
+        _names = header_line.split()
 
-    if len(_solverInfo) == 1:
-        _solverInfo = _solverInfo[0]
-    else:
-        _solverInfo = pd.concat(_solverInfo)
-        
+    # now we can load the file with the correct header
+    _solverInfo = pd.read_csv(join(load_path, "postProcessing", "solverInfo", name, "solverInfo.dat"), names=_names,
+                              sep=r"\s+", comment="#")
+    _solverInfo.drop_duplicates(["Time"], inplace=True)
     _solverInfo.reset_index(inplace=True, drop=True)
 
     return _solverInfo
 
 
-def load_yplus(load_path, patch_name: str = "airfoil") -> pd.DataFrame:
-    dirs = sorted(glob(join(load_path, "postProcessing", "yPlus", "*")), key=lambda x: float(x.split("/")[-1]))
-    _yplus = [pd.read_csv(join(p, "yPlus.dat"), sep=r"\s+", comment="#", header=None, usecols=list(range(5)),
-                          names=["t", "patch", "yPlus_min", "yPlus_max", "yPlus_avg"]) for p in dirs]
-
-    if len(_yplus) == 1:
-        _yplus = _yplus[0]
-    else:
-        _yplus = pd.concat(_yplus)
+def load_yplus(load_path, name: str = "alpha0.000000", patch_name: str = "airfoil") -> pd.DataFrame:
+    _yplus = pd.read_csv(join(load_path, "postProcessing", "yPlus", name, "yPlus.dat"), sep=r"\s+", comment="#",
+                         header=None, usecols=list(range(5)),
+                         names=["t", "patch", "yPlus_min", "yPlus_max", "yPlus_avg"])
 
     # only keep the target patch name
     _yplus = _yplus[_yplus.patch == patch_name]
@@ -51,14 +41,8 @@ def load_yplus(load_path, patch_name: str = "airfoil") -> pd.DataFrame:
 def load_force_coeffs(load_path, name: str = "alpha_0.00000") -> pd.DataFrame:
     names = ["t", "cx", "cy", "cm_pitch"]
     usecols = [0, 1, 4, 7]
-    dirs = sorted(glob(join(load_path, "postProcessing", "forces", name)), key=lambda x: float(x.split("_")[-1]))
-    coeffs = [pd.read_csv(join(p, "coefficient.dat"), sep=r"\s+", comment="#", header=None, usecols=usecols, names=names)
-              for p in dirs]
-
-    if len(coeffs) == 1:
-        coeffs = coeffs[0]
-    else:
-        coeffs = pd.concat(coeffs)
+    coeffs = pd.read_csv(join(load_path, "postProcessing", "forces", name, "coefficient.dat"), sep=r"\s+", comment="#",
+                         header=None, usecols=usecols, names=names)
 
     # remove duplicates (resulting from dt < write precision) and reset the idx
     coeffs.drop_duplicates(["t"], inplace=True)
@@ -91,6 +75,18 @@ def get_loss_from_log_file(load_dir: str) -> list:
     # omit the las entry, because this shows the final parameters
     lines = [line.split("{'loss':")[-1].split(", ")[0].strip(" (") for line in lines if "{'loss':" in line][:-1]
     return list(map(float, lines))
+
+
+def load_optimization_log(load_path: str, file_name: str = "log.optimization") -> pd.DataFrame:
+    names = ["trial", "f_max", "t_max", "xf", "KR", "N1", "N2", "objective"]
+    return pd.read_csv(join(load_path, file_name), sep=r"\s+", comment="#", header=None, skiprows=2, names=names)
+
+
+def load_polar_files(load_path: str) -> list:
+    names = ["alpha", "cd", "cl", "cm_pitch"]
+    return [pd.read_csv(p, sep=r"\s+", comment="#", header=None, usecols=[0, 1, 2, 3], names=names, skiprows=2)
+            for p in sorted(glob(join(load_path, f"polar_trial_*.dat")),
+                            key=lambda x: int(x.split("_")[-1].split(".")[0]))]
 
 
 if __name__ == "__main__":

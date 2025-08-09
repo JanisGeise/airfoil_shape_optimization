@@ -135,6 +135,7 @@ def run_optimization(settings: dict) -> None:
 
 
 if __name__ == "__main__":
+    # TODO: fix transition model & mapFields
     setup = {
         # boundaries for CSM parameters
         "f_max": [0.005, 0.05],  # max. camber
@@ -162,7 +163,7 @@ if __name__ == "__main__":
         "train_path": "execute_training",
 
         "alpha_target": 0,  # target angle of attack at design point
-        "alpha_range": [-0.5, 3],  # angle of attack range in which the airfoil should perform well
+        "alpha_range": [-2, 5],  # angle of attack range in which the airfoil should perform well
         "delta_alpha": 0.5,  # increment AoA by x deg
         "cl_target": 0.4,  # target c_L at alpha_target
     }

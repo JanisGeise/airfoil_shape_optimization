@@ -19,17 +19,21 @@ runApplication decomposePar
 runParallel renumberMesh -overwrite
 
 # initialize
-# runParallel potentialFoam -writephi
+runParallel potentialFoam -writephi
 
 # execute flow solver
 runParallel "$(getApplication)"
 
-# rename the forces directory
+latestTime=$(foamListTimes -case processor0 | tail -1)
+
+# rename the postProcessing directories according to the current AoA
 mv "postProcessing/forces/0" "postProcessing/forces/alpha_${alpha}"
+mv "postProcessing/solverInfo/0" "postProcessing/solverInfo/alpha_${alpha}"
+mv "postProcessing/yPlus/0" "postProcessing/yPlus/alpha_${alpha}"
+mv "postProcessing/wallShearStress/0" "postProcessing/wallShearStress/alpha_${alpha}"
+mv "postProcessing/surface/${latestTime}" "postProcessing/surface/alpha_${alpha}"
+foamListTimes -case postProcessing/surface/ | while read time; do rm -rf "postProcessing/surface/$time"; done
 
 # reconstruct the latest time
-runApplication reconstructPar -latestTime
-
-# remove everything not required for the next AoA
-rm -r log.* processor* 0
+# runApplication reconstructPar -latestTime
 

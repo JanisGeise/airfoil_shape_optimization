@@ -92,7 +92,11 @@ class DataLoader:
                 else:
                     _obj.append(self._c1 * self._coefficients[a]["cx"])
             else:
+                # TODO: if simulation diverges forces yield large garbage values
+                #       -> we need to recognize them and provide exception handling, not just if no forces are available
                 _obj.append(self._value_not_converged)
+
+            # TODO: exception handling if alpha_min == alpha_max
             _weight.append(1 - abs(self._alpha_target - float(a)) / (self._alpha_max - self._alpha_min))
 
         # weigh with distance to alpha_target

@@ -171,7 +171,7 @@ class ModifySimulationSetup(ComputeInitialConditions):
         return self._alpha
 
     @alpha.setter
-    def alpha(self, alpha):
+    def alpha(self, alpha) -> None:
         """
         set a new angle of attack and modify the forces function object and inflow velocity vector accordingly
 
@@ -181,6 +181,17 @@ class ModifySimulationSetup(ComputeInitialConditions):
         self._alpha_old = self._alpha
         self._alpha = alpha
         self._set_angle_of_attack()
+
+    def set_endTime(self, end_time: int = 3500) -> None:
+        """
+        overwrite the end time of the simulation
+
+        :param end_time: new end time of the simulation
+        :return: None
+        """
+        for p in self._path:
+            self._replace_line(join(p, self._forces_FO, "controlDict"), "endTime", "endTime         2000;",
+                               "endTime         {:.0f};".format(end_time))
 
 
 if __name__ == "__main__":

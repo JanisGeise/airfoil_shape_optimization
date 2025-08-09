@@ -16,8 +16,6 @@ from airfoil_shape_optimization.utils import create_run_directories
 
 if __name__ == "__main__":
     # paths to the training directory
-    # TODO: rename solverInfo, surface and y+ directories during polar run as well. otherwise they get overwritten
-    #       increase endTime in control dict to 3500
     train_path = join("..", "execute_training")
     validation_path = join(train_path, "validation_run")
 
@@ -29,9 +27,12 @@ if __name__ == "__main__":
     chord = 0.15
 
     # parameters for polar computation
-    alpha_range = [-2, 4]
-    delta_alpha = 0.5
+    alpha_range = [-5, 10]
+    delta_alpha = 0.25
     alpha_target = 0
+
+    # end time of the simulation
+    end_time = 3500
 
     # create the simulation setup
     create_run_directories(join("..", "base_simulation"), validation_path)
@@ -48,6 +49,7 @@ if __name__ == "__main__":
     simulation = ModifySimulationSetup(validation_path, 0.01, 3e5, chord, 20,
                                        0.1, "U", 273, 1)
     simulation.set_inflow_conditions()
+    simulation.set_endTime(end_time)
 
     # initialize the executer
     executer = LocalExecuter(validation_path, 1)
