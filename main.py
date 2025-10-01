@@ -94,20 +94,12 @@ def run_optimization(settings: dict) -> None:
         for idx, alpha in enumerate(all_alpha):
             logger.info(f"Starting computation for alpha = {'{:.2f}'.format(alpha.item())} deg.")
 
-            # we need to set alpha before executing the first simulation, for all later simulations we need to set
-            # alpha before applying mapFields
-            if idx == 0:
-                simulation.alpha = alpha
-
-                # execute simulation
-                executer.run_simulation()
-                continue
-
             # set new alpha in all dicts
             simulation.alpha = alpha
 
             # map the field from previous alpha as initialization to new alpha to improve convergence
-            executer.set_initial_fields()
+            if idx > 0:
+                simulation.initialize_new_aoa()
 
             # execute simulation
             executer.run_simulation()

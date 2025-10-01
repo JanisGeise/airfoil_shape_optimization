@@ -10,7 +10,7 @@ class Executer(ABC):
         self._path_of = path_OF
 
     def set_openfoam_bashrc(self, simulation_path: str, pre_run_script: str = "Allrun.pre",  run_script: str = "Allrun",
-                            clean_script: str = "Allclean", map_fields_script: str = "mapFields") -> None:
+                            clean_script: str = "Allclean") -> None:
         # taken from: https://github.com/JanisGeise/drlfoam/blob/mb_drl/examples/debug.py
         # check if the path to bashrc was already added
         with open(f"{simulation_path}/{pre_run_script}", "r") as f:
@@ -22,7 +22,6 @@ class Executer(ABC):
             system(f"sed -i '5i # source bashrc for OpenFOAM \\n{command}' {simulation_path}/{pre_run_script}")
             system(f"sed -i '4i # source bashrc for OpenFOAM \\n{command}' {simulation_path}/{run_script}")
             system(f"sed -i '4i # source bashrc for OpenFOAM \\n{command}' {simulation_path}/{clean_script}")
-            system(f"sed -i '4i # source bashrc for OpenFOAM \\n{command}' {simulation_path}/{map_fields_script}")
 
     @abstractmethod
     def run_simulation(self):
@@ -30,10 +29,6 @@ class Executer(ABC):
 
     @abstractmethod
     def clean_simulation(self):
-        pass
-
-    @abstractmethod
-    def set_initial_fields(self):
         pass
 
     @abstractmethod

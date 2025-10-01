@@ -60,20 +60,9 @@ if __name__ == "__main__":
     for idx, alpha in enumerate(pt.arange(alpha_range[0], alpha_range[1] + delta_alpha, delta_alpha)):
         print(f"Starting computation for alpha = {'{:.2f}'.format(alpha.item())} deg.")
 
-        # we need to set alpha before executing the first simulation, for all later simulations we need to set
-        # alpha before applying mapFields
-        if idx == 0:
-            simulation.alpha = alpha
-
-            # execute simulation
-            executer.run_simulation()
-            continue
-
-        # set new alpha in all dicts
-        simulation.alpha = alpha
-
         # map the field from previous alpha as initialization to new alpha to improve convergence
-        executer.set_initial_fields()
+        if idx > 0:
+            simulation.initialize_new_aoa()
 
         # execute simulation
         executer.run_simulation()

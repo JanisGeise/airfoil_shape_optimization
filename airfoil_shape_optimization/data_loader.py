@@ -99,8 +99,8 @@ class DataLoader:
             # TODO: exception handling if alpha_min == alpha_max
             _weight.append(1 - abs(self._alpha_target - float(a)) / (self._alpha_max - self._alpha_min))
 
-        # weigh with distance to alpha_target
-        self._objective = sum(w * o for w, o in zip(_weight, _obj))
+        # weigh with quadratic distance to alpha_target
+        self._objective = sum(pow(w, 2) * o for w, o in zip(_weight, _obj))
 
     def _load_force_coefficients(self, run_directory: str) -> None:
         """

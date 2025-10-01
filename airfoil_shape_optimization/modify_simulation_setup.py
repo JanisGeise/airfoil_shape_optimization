@@ -1,10 +1,21 @@
 """
     adjust the initial conditions of the numerical setup according to the settings defined in the setup file
 """
+import logging
+
+from glob import glob
 from os.path import join
 from typing import Union
+from shutil import rmtree, move
+from os import remove
+from math import sin, cos, pi
 
 from .compute_initial_conditions import ComputeInitialConditions
+
+
+logger = logging.getLogger(__name__)
+logging.basicConfig(level=logging.INFO, format='[%(asctime)s] %(levelname)-8s %(message)s', datefmt='%Y-%m-%d %H:%M:%S',
+                    force=True)
 
 
 class ModifySimulationSetup(ComputeInitialConditions):
@@ -31,6 +42,7 @@ class ModifySimulationSetup(ComputeInitialConditions):
         self._path = simulation_path if isinstance(simulation_path, list) else [simulation_path]
         self._alpha = 0.0
         self._alpha_old = 0.0
+        self._end_time = 2000
 
         # base paths
         self._zero = "0.orig"
@@ -52,6 +64,7 @@ class ModifySimulationSetup(ComputeInitialConditions):
 
         self._set_inflow_velocity()
         self._set_free_stream_density()
+        # TODO: set endtime
 
     def _set_k(self) -> None:
         """
@@ -144,6 +157,51 @@ class ModifySimulationSetup(ComputeInitialConditions):
             self._replace_line(join(p, self._zero, "ReThetat"), "internalField", "internalField   uniform 1000;",
                                "internalField   uniform {:.6f};".format(self._re_theta))
 
+    def initialize_new_aoa(self):
+        # TODO: replace with new AoA in file manipulation
+        logger.info("Initializing new AoA.")
+        _new_AoA = f"( {self._u_inf * cos(self._alpha * pi/180)} 0 {self._u_inf * sin(self._alpha * pi/180)} )"
+
+        # then modify the inlet velocity vector TODO: loop over all paths, change endtime
+        _files = join(self._path[0], "processor*", "*00")
+        for p in glob(_files):
+            with open(join(p, "U"), "rb") as file:
+                lines = file.readlines()
+
+            # check if the processor contains any domain boundaries
+            check = [idx for idx, l in enumerate(lines) if b"        freestreamValue " in l][0]
+
+            # if so, replace with new AoA and write back to file
+            if b" uniform" in lines[check]:
+                old = lines[check].split(b"uniform ")[-1].split(b";")[0]
+                lines[check] = lines[check].replace(old, _new_AoA.encode("utf-8"))
+
+                with open(join(p, "U"), "wb") as f_out:
+                    f_out.writelines(lines)
+
+            # reset time in processor*/*/uniform/time
+            with open(join(p, "uniform", "time"), "rb") as file:
+                lines = file.readlines()
+
+            # get the lines to replace
+            check = [idx for idx, l in enumerate(lines) if l.startswith(b"value") or l.startswith(b"name") or
+                     l.startswith(b"index")]
+            for c in check:
+                lines[c] = lines[c].replace(str(self._end_time).encode("utf-8"), "0".encode("utf-8"))
+
+            with open(join(p, "uniform", "time"), "wb") as f_out:
+                f_out.writelines(lines)
+
+            # overwrite 0 directory with last time step
+            rmtree(join("/".join(p.split("/")[:-1]), "0"))
+            move(p, join("/".join(p.split("/")[:-1]), "0"))
+
+        # remove log files of the simulation, so we can execute the next one
+        [remove(l) for l in glob(join(self._path[0], "log.*"))]
+
+        # finally update the end_time, since we now don't need 2000 iterations anymore
+        self.set_endTime(500)
+
     @staticmethod
     def _replace_line(pwd: str, key: str, old: str, new: str) -> None:
         """
@@ -190,8 +248,11 @@ class ModifySimulationSetup(ComputeInitialConditions):
         :return: None
         """
         for p in self._path:
-            self._replace_line(join(p, self._forces_FO, "controlDict"), "endTime", "endTime         2000;",
+            self._replace_line(join(p, self._forces_FO, "controlDict"), "endTime", f"endTime         {self._end_time};",
                                "endTime         {:.0f};".format(end_time))
+
+        # update the current end_time
+        self._end_time = end_time
 
 
 if __name__ == "__main__":
