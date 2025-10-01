@@ -31,7 +31,7 @@ if __name__ == "__main__":
     delta_alpha = 0.25
     alpha_target = 0
 
-    # end time of the simulation
+    # end time of the simulation for the first case
     end_time = 3500
 
     # create the simulation setup

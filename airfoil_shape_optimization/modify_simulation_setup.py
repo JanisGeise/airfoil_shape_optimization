@@ -157,50 +157,55 @@ class ModifySimulationSetup(ComputeInitialConditions):
             self._replace_line(join(p, self._zero, "ReThetat"), "internalField", "internalField   uniform 1000;",
                                "internalField   uniform {:.6f};".format(self._re_theta))
 
-    def initialize_new_aoa(self):
-        # TODO: replace with new AoA in file manipulation
+    def initialize_new_aoa(self) -> None:
+        """
+        Set the new alpha within the current simulation and move the fields to the zero directory, so it can be used
+        as initialization for the next alpha.
+
+        :return: None
+        """
         logger.info("Initializing new AoA.")
         _new_AoA = f"( {self._u_inf * cos(self._alpha * pi/180)} 0 {self._u_inf * sin(self._alpha * pi/180)} )"
 
-        # then modify the inlet velocity vector TODO: loop over all paths, change endtime
-        _files = join(self._path[0], "processor*", "*00")
-        for p in glob(_files):
-            with open(join(p, "U"), "rb") as file:
-                lines = file.readlines()
+        # then modify the inlet velocity vector
+        for d in self._path:
+            for p in glob(join(d, "processor*", str(self._end_time))):
+                with open(join(p, "U"), "rb") as file:
+                    lines = file.readlines()
 
-            # check if the processor contains any domain boundaries
-            check = [idx for idx, l in enumerate(lines) if b"        freestreamValue " in l][0]
+                # check if the processor contains any domain boundaries
+                check = [idx for idx, l in enumerate(lines) if b"        freestreamValue " in l][0]
 
-            # if so, replace with new AoA and write back to file
-            if b" uniform" in lines[check]:
-                old = lines[check].split(b"uniform ")[-1].split(b";")[0]
-                lines[check] = lines[check].replace(old, _new_AoA.encode("utf-8"))
+                # if so, replace with new AoA and write back to file
+                if b" uniform" in lines[check]:
+                    old = lines[check].split(b"uniform ")[-1].split(b";")[0]
+                    lines[check] = lines[check].replace(old, _new_AoA.encode("utf-8"))
 
-                with open(join(p, "U"), "wb") as f_out:
+                    with open(join(p, "U"), "wb") as f_out:
+                        f_out.writelines(lines)
+
+                # reset time in processor*/*/uniform/time
+                with open(join(p, "uniform", "time"), "rb") as file:
+                    lines = file.readlines()
+
+                # get the lines to replace
+                check = [idx for idx, l in enumerate(lines) if l.startswith(b"value") or l.startswith(b"name") or
+                         l.startswith(b"index")]
+                for c in check:
+                    lines[c] = lines[c].replace(str(self._end_time).encode("utf-8"), "0".encode("utf-8"))
+
+                with open(join(p, "uniform", "time"), "wb") as f_out:
                     f_out.writelines(lines)
 
-            # reset time in processor*/*/uniform/time
-            with open(join(p, "uniform", "time"), "rb") as file:
-                lines = file.readlines()
+                # overwrite 0 directory with last time step
+                rmtree(join("/".join(p.split("/")[:-1]), "0"))
+                move(p, join("/".join(p.split("/")[:-1]), "0"))
 
-            # get the lines to replace
-            check = [idx for idx, l in enumerate(lines) if l.startswith(b"value") or l.startswith(b"name") or
-                     l.startswith(b"index")]
-            for c in check:
-                lines[c] = lines[c].replace(str(self._end_time).encode("utf-8"), "0".encode("utf-8"))
+            # remove log files of the simulation, so we can execute the next one
+            [remove(l) for l in glob(join(self._path[0], "log.*"))]
 
-            with open(join(p, "uniform", "time"), "wb") as f_out:
-                f_out.writelines(lines)
-
-            # overwrite 0 directory with last time step
-            rmtree(join("/".join(p.split("/")[:-1]), "0"))
-            move(p, join("/".join(p.split("/")[:-1]), "0"))
-
-        # remove log files of the simulation, so we can execute the next one
-        [remove(l) for l in glob(join(self._path[0], "log.*"))]
-
-        # finally update the end_time, since we now don't need 2000 iterations anymore
-        self.set_endTime(500)
+        # finally update the end_time, since we now don't need 2000 iterations anymore; 200 are usually sufficient
+        self.set_endTime(200)
 
     @staticmethod
     def _replace_line(pwd: str, key: str, old: str, new: str) -> None:

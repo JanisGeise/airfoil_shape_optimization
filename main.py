@@ -84,6 +84,7 @@ def run_optimization(settings: dict) -> None:
                                                write_path=join(dirs[d], "constant", "triSurface"))
 
         # compute polar in the defined alpha range, since the AoA's are usually very low, we can use float16
+        # TODO: add warning if alpha_target not included in range
         all_alpha = pt.arange(settings["alpha_range"][0], settings["alpha_range"][1]+settings["delta_alpha"],
                               settings["delta_alpha"], dtype=pt.float16)
 
@@ -127,7 +128,7 @@ def run_optimization(settings: dict) -> None:
 
 
 if __name__ == "__main__":
-    # TODO: fix transition model & mapFields
+    # TODO: fix transition model -> therefore grid has to be fixed
     setup = {
         # boundaries for CSM parameters
         "f_max": [0.005, 0.05],  # max. camber
