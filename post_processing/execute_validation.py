@@ -16,7 +16,7 @@ from airfoil_shape_optimization.utils import create_run_directories
 
 if __name__ == "__main__":
     # paths to the training directory
-    train_path = join("..", "execute_training")
+    train_path = join("..", "run/test_polar_run/init_polar_sweep")
     validation_path = join(train_path, "validation_run")
 
     # add the path to OpenFOAM bashrc when executing from IDE
@@ -58,11 +58,12 @@ if __name__ == "__main__":
     dataloader = DataLoader(validation_path, 0.4, alpha_target, alpha_range)
 
     for idx, alpha in enumerate(pt.arange(alpha_range[0], alpha_range[1] + delta_alpha, delta_alpha)):
-        print(f"Starting computation for alpha = {'{:.2f}'.format(alpha.item())} deg.")
+        print(f"Starting computation for alpha = {alpha.item():.2f} deg.")
+        simulation.alpha = alpha
 
         # map the field from previous alpha as initialization to new alpha to improve convergence
         if idx > 0:
-            simulation.initialize_new_aoa()
+            simulation.initialize_new_aoa(max_iterations=500)
 
         # execute simulation
         executer.run_simulation()

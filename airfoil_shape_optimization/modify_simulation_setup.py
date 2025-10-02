@@ -157,11 +157,12 @@ class ModifySimulationSetup(ComputeInitialConditions):
             self._replace_line(join(p, self._zero, "ReThetat"), "internalField", "internalField   uniform 1000;",
                                "internalField   uniform {:.6f};".format(self._re_theta))
 
-    def initialize_new_aoa(self) -> None:
+    def initialize_new_aoa(self, max_iterations: int = 200) -> None:
         """
         Set the new alpha within the current simulation and move the fields to the zero directory, so it can be used
         as initialization for the next alpha.
 
+        :param max_iterations: number of iterations to run the next simulation.
         :return: None
         """
         logger.info("Initializing new AoA.")
@@ -205,7 +206,7 @@ class ModifySimulationSetup(ComputeInitialConditions):
             remove(join(d, "log.simpleFoam"))
 
         # finally update the end_time, since we now don't need 2000 iterations anymore; 200 are usually sufficient
-        self.set_endTime(200)
+        self.set_endTime(max_iterations)
 
     @staticmethod
     def _replace_line(pwd: str, key: str, old: str, new: str) -> None:

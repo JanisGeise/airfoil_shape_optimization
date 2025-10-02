@@ -12,6 +12,7 @@ from ax.service.ax_client import AxClient
 from ax.service.utils.instantiation import ObjectiveProperties
 
 from airfoil_shape_optimization.generate_airfoil import AirfoilGenerator
+from airfoil_shape_optimization.log_file import LogFile
 from airfoil_shape_optimization.modify_simulation_setup import ModifySimulationSetup
 from airfoil_shape_optimization.utils import create_run_directories
 from airfoil_shape_optimization.local_execution import LocalExecuter
@@ -46,10 +47,8 @@ def run_optimization(settings: dict) -> None:
     dirs = [join(settings["train_path"], f"trial_{d}") for d in range(settings["N_simulations"])]
     create_run_directories(settings["base_simulation"], dirs)
 
-    _fmt = "{:." + str(6) + "f}"
-    with open(join(settings["train_path"], "log.optimization"), "w") as log_file:
-        log_file.write("trial\tf_max\t\tt_max\t\txf\t\t\tKR\t\t\tN1\t\t\tN2\t\t\tobjective\n")
-        log_file.write("-----\t--------\t--------\t--------\t--------\t--------\t--------\t---------\n")
+    # initialize log file for optimization
+    log_file = LogFile(settings["train_path"])
 
     # set IC conditions of the simulation
     simulation = ModifySimulationSetup(dirs, settings["Tu"], settings["Re"], settings["chord"], settings["U_inf"],
@@ -84,16 +83,17 @@ def run_optimization(settings: dict) -> None:
                                                write_path=join(dirs[d], "constant", "triSurface"))
 
         # compute polar in the defined alpha range, since the AoA's are usually very low, we can use float16
-        # TODO: add warning if alpha_target not included in range
         all_alpha = pt.arange(settings["alpha_range"][0], settings["alpha_range"][1]+settings["delta_alpha"],
                               settings["delta_alpha"], dtype=pt.float16)
 
         # make sure alpha_target is included within the polar
         if settings["alpha_target"] not in all_alpha:
+            logger.warning(f"alpha_target = {settings['alpha_target']} not within range {settings['alpha_range']}. "
+                           f"Adding 'alpha_target' to the specified range.")
             all_alpha = pt.cat([all_alpha, pt.tensor(settings["alpha_target"]).unsqueeze(-1)])
 
         for idx, alpha in enumerate(all_alpha):
-            logger.info(f"Starting computation for alpha = {'{:.2f}'.format(alpha.item())} deg.")
+            logger.info(f"Starting computation for alpha = {alpha.item():.2f} deg.")
 
             # set new alpha in all dicts
             simulation.alpha = alpha
@@ -115,13 +115,10 @@ def run_optimization(settings: dict) -> None:
         executer.clean_simulation()
 
         # update the log file with the CST parameters and objective
-        with open(join(settings["train_path"], "log.optimization"), "a") as log_file:
-            log_file.write(f"{t}\t\t{_fmt.format(airfoils['f_max'])}\t{_fmt.format(airfoils['t_max'])}\t"
-                           f"{_fmt.format(airfoils['xf'])}\t{_fmt.format(airfoils['KR'])}\t"
-                           f"{_fmt.format(airfoils['N1'])}\t{_fmt.format(airfoils['N2'])}\t"
-                           f"{_fmt.format(objective[0])}\n")
+        log_file.update(f"{t}\t\t{airfoils['f_max']:.6f}\t{airfoils['t_max']:.6f}\t {airfoils['xf']:.6f}\t"
+                        f"{airfoils['KR']:.6f}\t {airfoils['N1']:.6f}\t{airfoils['N2']:.6f}\t {objective[0]:.6f}\n")
 
-    logging.info(f"\nFinished optimization after {_fmt.format(time() - t_start)} s.\n")
+    logging.info(f"\nFinished optimization after {(time() - t_start):.3f} s.\n")
     logging.info(ax.get_best_parameters())
     pt.save(ax.get_best_parameters(), join(settings["train_path"], "results_final_parameters.pt"))
     pt.save(settings, join(settings["train_path"], "settings_optimization.pt"))
@@ -160,6 +157,7 @@ if __name__ == "__main__":
         "delta_alpha": 0.5,  # increment AoA by x deg
         "cl_target": 0.4,  # target c_L at alpha_target
     }
+
     # add the path to OpenFOAM bashrc when executing from IDE
     environ["WM_PROJECT_DIR"] = "/usr/lib/openfoam/openfoam2412"
     sys.path.insert(0, environ["WM_PROJECT_DIR"])
