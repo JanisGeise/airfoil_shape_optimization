@@ -201,8 +201,8 @@ class ModifySimulationSetup(ComputeInitialConditions):
                 rmtree(join("/".join(p.split("/")[:-1]), "0"))
                 move(p, join("/".join(p.split("/")[:-1]), "0"))
 
-            # remove log files of the simulation, so we can execute the next one
-            [remove(l) for l in glob(join(self._path[0], "log.*"))]
+            # remove log files for simpleFOam of the simulation, so we can execute the next one
+            remove(join(d, "log.simpleFoam"))
 
         # finally update the end_time, since we now don't need 2000 iterations anymore; 200 are usually sufficient
         self.set_endTime(200)
