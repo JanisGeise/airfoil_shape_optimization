@@ -19,10 +19,9 @@ from pyvista import PolyData
 from typing import Union, Tuple
 from os.path import join, exists
 
-
 class AirfoilGenerator:
     def __init__(self, n_points: int = 1000, cosine_distributed: bool = True, x_start: Union[int, float] = 0,
-                 x_stop: Union[int, float] = 1, output: str = "stl") -> None:
+                 x_stop: Union[int, float] = 1, output: str = "stl", validation: bool = False) -> None:
         """
         class for generating the coordinates of the airfoil based on CST method
 
@@ -31,10 +30,14 @@ class AirfoilGenerator:
         :param x_start: min. x-coordinate at leading-edge
         :param x_stop: max. x-coordinate at trailing-edge
         :param output: output format for airfoil coordinates, options: "dat" or "stl"
+        :param validation: if True both the dat file and the STL file will be written
         """
-        # set the given parameters
-        # TODO: check inputs, e.g. x_start < x_stop, ...
+        # check for correctness and set the given parameters
+        if x_stop <= x_start:
+            raise RuntimeError (f"'x_stop' must be larger than 'x_start' but x_stop={x_stop} <= x_start={x_start} "
+                                f"was provided.")
         self._write_dat_file = True if output.lower() == "dat" else False
+        self._validation = validation
         self._x_start = x_start
         self._x_stop = x_stop
         self._n_points = n_points
@@ -59,7 +62,7 @@ class AirfoilGenerator:
     def generate_airfoil(self, n1: Union[int, float], n2: Union[int, float],
                          kr: Union[int, float], f_max: Union[int, float], xf: Union[int, float],
                          t_max: Union[int, float], airfoil_name: str = "airfoil", write_path: str = ".",
-                         write_file: bool = True) -> None or Tuple[pt.Tensor, pt.Tensor]:
+                         write_file: bool = True) -> Union[Tuple[pt.Tensor, pt.Tensor], None]:
         """
         generates the airfoil coordinates based on the given parameters
 
@@ -99,8 +102,8 @@ class AirfoilGenerator:
 
         # reshape, that it is sorted from TE -> via suction side -> LE -> via pressure side -> TE, remove one of the
         # zeros (each airfoil side has a zero at LE, but we only need one)
-        self._x = pt.cat([reversed(self._x)[:-1], self._x])
-        self._y = pt.cat([reversed(_y_ss)[:-1], _y_ps])
+        self._x = pt.cat([reversed(self._x[:-1]), self._x])
+        self._y = pt.cat([reversed(_y_ss[:-1]), _y_ps])
 
         # reverse the scaling, y-gets scaled according to the scaling in x
         self._x = self._reverse_min_max_scaling(self._x)
@@ -116,13 +119,17 @@ class AirfoilGenerator:
             if not exists(self._write_path):
                 makedirs(self._write_path)
 
-            if self._write_dat_file:
+            if self._write_dat_file or self._validation:
                 self._write_data_to_dat_file()
-            else:
+            if not self._write_dat_file:
                 self._write_data_to_stl_file()
+            else:
+                raise RuntimeError ("Airfoil file generation failed: Neither DAT nor STL file was written. "
+                                    "Please specify an 'output' argument when instantiating the AirfoilGenerator.")
 
             # reset x- and y to avoid issues when generating multiple airfoils at once
             self._reset_coordinates()
+            return None
 
     def _reset_coordinates(self) -> None:
         """
@@ -195,7 +202,7 @@ class AirfoilGenerator:
         """
         with open(join(self._write_path, f"{self._name}.dat"), "w") as f:
             f.write(f"{self._name}\n")
-            [f.write("{:.8f}  {:.8f}\n".format(c[0], c[1])) for c in zip(self._x, self._y)]
+            [f.write("({:.8f}  {:.8f} 0)\n".format(c[0], c[1])) for c in zip(self._x, self._y)]
 
     def _scale_x(self) -> None:
         """

@@ -39,7 +39,8 @@ if __name__ == "__main__":
 
     # generate the airfoil based on the final results of the optimization
     final_params = pt.load(join(train_path, "results_final_parameters.pt"), weights_only=False)[0]
-    airfoil_generator = AirfoilGenerator(x_stop=chord)
+
+    airfoil_generator = AirfoilGenerator(x_stop=chord, validation=True)
     airfoil_generator.generate_airfoil(final_params["N1"], final_params["N2"], final_params["KR"],
                                        final_params["f_max"], final_params["xf"], final_params["t_max"],
                                        airfoil_name=f"airfoil",
