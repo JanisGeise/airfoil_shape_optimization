@@ -128,7 +128,7 @@ if __name__ == "__main__":
     # TODO: fix transition model -> therefore grid has to be fixed
     setup = {
         # boundaries for CSM parameters
-        "f_max": [0.005, 0.05],  # max. camber
+        "f_max": [0.005, 0.06],  # max. camber
         "t_max": [0.05, 0.15],  # max. thickness
         "xf": [0.35, 0.75],  # position of max. camber
         "KR": [0.2, 0.8],  # shape parameter for thickness distribution
@@ -146,15 +146,15 @@ if __name__ == "__main__":
         "chord": 0.15,  # chord length
 
         # settings for optimization
-        "N_trials": 20,
+        "N_trials": 50,
         "N_runner": 1,
         "N_simulations": 1,
         "base_simulation": "base_simulation",
         "train_path": "execute_training",
 
         "alpha_target": 0,  # target angle of attack at design point
-        "alpha_range": [-2, 5],  # angle of attack range in which the airfoil should perform well
-        "delta_alpha": 0.5,  # increment AoA by x deg
+        "alpha_range": [-2, 6],  # angle of attack range in which the airfoil should perform well
+        "delta_alpha": 0.25,  # increment AoA by x deg
         "cl_target": 0.4,  # target c_L at alpha_target
     }
 

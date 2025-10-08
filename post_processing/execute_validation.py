@@ -16,8 +16,8 @@ from airfoil_shape_optimization.utils import create_run_directories
 
 if __name__ == "__main__":
     # paths to the training directory
-    train_path = join("..", "run/test_polar_run/init_polar_sweep")
-    validation_path = join(train_path, "validation_run")
+    train_path = join("..", "run", "kOmegaSST_reference_case")
+    validation_path = join(train_path, "validation_run_withDeltaTE")
 
     # add the path to OpenFOAM bashrc when executing from IDE
     environ["WM_PROJECT_DIR"] = "/usr/lib/openfoam/openfoam2412"
@@ -28,7 +28,7 @@ if __name__ == "__main__":
 
     # parameters for polar computation
     alpha_range = [-5, 10]
-    delta_alpha = 0.25
+    delta_alpha = 0.2
     alpha_target = 0
 
     # end time of the simulation for the first case
@@ -60,7 +60,9 @@ if __name__ == "__main__":
 
     for idx, alpha in enumerate(pt.arange(alpha_range[0], alpha_range[1] + delta_alpha, delta_alpha)):
         print(f"Starting computation for alpha = {alpha.item():.2f} deg.")
-        simulation.alpha = alpha
+
+        # make sure alpha = 0 deg is always written as 0.000 deg (not -0.000 deg)
+        simulation.alpha = alpha if alpha.abs() > 1e-6 else alpha.abs()
 
         # map the field from previous alpha as initialization to new alpha to improve convergence
         if idx > 0:

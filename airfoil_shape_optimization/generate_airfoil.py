@@ -12,6 +12,7 @@
         Heidelberg: Springer Berlin Heidelberg, 2001. doi: 10.1007/978-3-642-56911-1.
 
 """
+import logging
 import torch as pt
 
 from os import makedirs
@@ -19,9 +20,14 @@ from pyvista import PolyData
 from typing import Union, Tuple
 from os.path import join, exists
 
+
+logger = logging.getLogger(__name__)
+logging.basicConfig(level=logging.INFO, format='[%(asctime)s] %(levelname)-8s %(message)s', datefmt='%Y-%m-%d %H:%M:%S',
+                    force=True)
+
 class AirfoilGenerator:
     def __init__(self, n_points: int = 1000, cosine_distributed: bool = True, x_start: Union[int, float] = 0,
-                 x_stop: Union[int, float] = 1, output: str = "stl", validation: bool = False) -> None:
+                 x_stop: Union[int, float] = 1, deltaTE: bool = True, output: str = "stl", validation: bool = False) -> None:
         """
         class for generating the coordinates of the airfoil based on CST method
 
@@ -29,6 +35,8 @@ class AirfoilGenerator:
         :param cosine_distributed:  distribution of x-coordinates, if 'False' then points are equally distributed
         :param x_start: min. x-coordinate at leading-edge
         :param x_stop: max. x-coordinate at trailing-edge
+        :param deltaTE: if True a trailing edge gap of 0.1 * abs(self._x_stop - self._x_start) will be added to improve
+                        the mesh quality.
         :param output: output format for airfoil coordinates, options: "dat" or "stl"
         :param validation: if True both the dat file and the STL file will be written
         """
@@ -43,6 +51,13 @@ class AirfoilGenerator:
         self._n_points = n_points
         self._cos_distributed = cosine_distributed
         self._x = None
+
+        if deltaTE:
+            if output == "dat":
+                logger.warning("deltaTE > 0 not compatible with XFOIL.")
+            self._delta_TE = 0.1 * abs(self._x_stop - self._x_start)
+        else:
+            self._delta_TE = 0
 
         # initialize remaining attributes
         self._name = None
@@ -70,7 +85,8 @@ class AirfoilGenerator:
         :param n2:              second shape parameter of CST method, controls the trailing edge (TE)
         :param kr:              parameter defining the thickness distribution
         :param f_max:           max. camber, relative to the chord length
-        :param xf:          position of max. camber, relative to the chord length
+        :param xf:              position of max. camber, relative to the chord length, has to be
+                                xf > 1e-3 to avoid division by zero error
         :param t_max:           max. thickness of the airfoil, relative to the chord length
         :param airfoil_name:    name of the airfoil
         :param write_path:      path to which directory the dat file should be written to
@@ -87,6 +103,10 @@ class AirfoilGenerator:
         self._f_max = f_max
         self._xf_max = xf
         self._t_max = t_max
+
+        # make sure xf is large enough to avoid numerical instabilities
+        if abs(self._xf_max - 0 < 1e-3):
+            raise ValueError (f"Value for xf must be larger than 1e-3, but found value of xf = {self._xf_max}.")
 
         # compute thickness distribution
         self._compute_thickness_distribution()
@@ -166,10 +186,7 @@ class AirfoilGenerator:
         # shape function: S(x) = (x / KR) + KR * (1-x) -> first term: aft end shape, second term: nose shape
         S = self._x / self._kr + self._kr * (1 - self._x)
 
-        # TODO: add delta TE, use same delta TE for upper and lower surface, respectively, add as optimization parameter
-        delta_TE = 0
-
-        self._thickness_distribution = C * S + self._x * delta_TE
+        self._thickness_distribution = C * S + self._x * self._delta_TE
 
     def _compute_camber_line(self) -> None:
         """

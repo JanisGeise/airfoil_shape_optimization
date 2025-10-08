@@ -84,20 +84,23 @@ class DataLoader:
         # loop over alpha and compute objective for each AoA, then compute a weighted, global objective from that
         _obj, _weight = [], []
         for a in self._alpha:
-            if isinstance(self._coefficients[a], Series):
-                if float(a) == self._alpha_target:
+            _converged = (abs(self._coefficients[a]["cx"]) < self._value_not_converged and
+                          abs(self._coefficients[a]["cy"]) < self._value_not_converged)
+            if isinstance(self._coefficients[a], Series) and _converged:
+                if abs(float(a) - self._alpha_target) < 1e-6:
                     _obj.append((self._c1 * self._coefficients[a]["cx"] + self._c2 *
                                  abs(self._cl_target - self._coefficients[a]["cy"]) +
                                  self._c3 * abs(self._coefficients[a]["cm_pitch"])))
                 else:
                     _obj.append(self._c1 * self._coefficients[a]["cx"])
             else:
-                # TODO: if simulation diverges forces yield large garbage values
-                #       -> we need to recognize them and provide exception handling, not just if no forces are available
                 _obj.append(self._value_not_converged)
 
-            # TODO: exception handling if alpha_min == alpha_max
-            _weight.append(1 - abs(self._alpha_target - float(a)) / (self._alpha_max - self._alpha_min))
+            # if our polar range is smaller than 1 deg, just scale with the max. abs(alpha) (in case max. alpha < 0)
+            if abs(self._alpha_max - self._alpha_min) < 1:
+                _weight.append(1 - abs(self._alpha_target - float(a)) / abs(self._alpha_max))
+            else:
+                _weight.append(1 - abs(self._alpha_target - float(a)) / (self._alpha_max - self._alpha_min))
 
         # weigh with quadratic distance to alpha_target
         self._objective = sum(pow(w, 2) * o for w, o in zip(_weight, _obj))
